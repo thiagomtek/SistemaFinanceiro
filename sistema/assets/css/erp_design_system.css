@@ -1,0 +1,1316 @@
+/**
+ * ERP DESIGN SYSTEM & COMPONENTES GLOBAIS
+ * Elba Enxovais / TAG Comercio ERP
+ * 
+ * Camada unificada para:
+ * 1. Grid Responsivo Canonico (12 colunas em todos os breakpoints)
+ * 2. Modais Adaptativos (sm, md, lg, xl, auto) com isolamento de conflitos
+ * 3. Inputs Padronizados (altura 38px, prefixos R$/% embutidos, selects, datas)
+ * 4. Tabelas e Paginacao Limpa (eliminacao definitiva de bullets verticais)
+ */
+
+/* ==========================================================================
+   1. GRID CANONICO DE 12 COLUNAS (Evita empilhamento prematuro de inputs)
+   ========================================================================== */
+.row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  margin-right: -10px !important;
+  margin-left: -10px !important;
+}
+
+.row > [class*="col-"] {
+  padding-right: 10px !important;
+  padding-left: 10px !important;
+  box-sizing: border-box !important;
+}
+
+/* Colunas Base (Mobile e padrao) */
+.col-1  { flex: 0 0 8.333333% !important; max-width: 8.333333% !important; width: 8.333333% !important; }
+.col-2  { flex: 0 0 16.666667% !important; max-width: 16.666667% !important; width: 16.666667% !important; }
+.col-3  { flex: 0 0 25% !important; max-width: 25% !important; width: 25% !important; }
+.col-4  { flex: 0 0 33.333333% !important; max-width: 33.333333% !important; width: 33.333333% !important; }
+.col-5  { flex: 0 0 41.666667% !important; max-width: 41.666667% !important; width: 41.666667% !important; }
+.col-6  { flex: 0 0 50% !important; max-width: 50% !important; width: 50% !important; }
+.col-7  { flex: 0 0 58.333333% !important; max-width: 58.333333% !important; width: 58.333333% !important; }
+.col-8  { flex: 0 0 66.666667% !important; max-width: 66.666667% !important; width: 66.666667% !important; }
+.col-9  { flex: 0 0 75% !important; max-width: 75% !important; width: 75% !important; }
+.col-10 { flex: 0 0 83.333333% !important; max-width: 83.333333% !important; width: 83.333333% !important; }
+.col-11 { flex: 0 0 91.666667% !important; max-width: 91.666667% !important; width: 91.666667% !important; }
+.col-12 { flex: 0 0 100% !important; max-width: 100% !important; width: 100% !important; }
+
+/* Breakpoint SM (>= 576px) */
+@media (min-width: 576px) {
+  .col-sm-1  { flex: 0 0 8.333333% !important; max-width: 8.333333% !important; width: 8.333333% !important; }
+  .col-sm-2  { flex: 0 0 16.666667% !important; max-width: 16.666667% !important; width: 16.666667% !important; }
+  .col-sm-3  { flex: 0 0 25% !important; max-width: 25% !important; width: 25% !important; }
+  .col-sm-4  { flex: 0 0 33.333333% !important; max-width: 33.333333% !important; width: 33.333333% !important; }
+  .col-sm-5  { flex: 0 0 41.666667% !important; max-width: 41.666667% !important; width: 41.666667% !important; }
+  .col-sm-6  { flex: 0 0 50% !important; max-width: 50% !important; width: 50% !important; }
+  .col-sm-7  { flex: 0 0 58.333333% !important; max-width: 58.333333% !important; width: 58.333333% !important; }
+  .col-sm-8  { flex: 0 0 66.666667% !important; max-width: 66.666667% !important; width: 66.666667% !important; }
+  .col-sm-9  { flex: 0 0 75% !important; max-width: 75% !important; width: 75% !important; }
+  .col-sm-10 { flex: 0 0 83.333333% !important; max-width: 83.333333% !important; width: 83.333333% !important; }
+  .col-sm-11 { flex: 0 0 91.666667% !important; max-width: 91.666667% !important; width: 91.666667% !important; }
+  .col-sm-12 { flex: 0 0 100% !important; max-width: 100% !important; width: 100% !important; }
+}
+
+/* Breakpoint MD (>= 768px) */
+@media (min-width: 768px) {
+  .col-md-1  { flex: 0 0 8.333333% !important; max-width: 8.333333% !important; width: 8.333333% !important; }
+  .col-md-2  { flex: 0 0 16.666667% !important; max-width: 16.666667% !important; width: 16.666667% !important; }
+  .col-md-3  { flex: 0 0 25% !important; max-width: 25% !important; width: 25% !important; }
+  .col-md-4  { flex: 0 0 33.333333% !important; max-width: 33.333333% !important; width: 33.333333% !important; }
+  .col-md-5  { flex: 0 0 41.666667% !important; max-width: 41.666667% !important; width: 41.666667% !important; }
+  .col-md-6  { flex: 0 0 50% !important; max-width: 50% !important; width: 50% !important; }
+  .col-md-7  { flex: 0 0 58.333333% !important; max-width: 58.333333% !important; width: 58.333333% !important; }
+  .col-md-8  { flex: 0 0 66.666667% !important; max-width: 66.666667% !important; width: 66.666667% !important; }
+  .col-md-9  { flex: 0 0 75% !important; max-width: 75% !important; width: 75% !important; }
+  .col-md-10 { flex: 0 0 83.333333% !important; max-width: 83.333333% !important; width: 83.333333% !important; }
+  .col-md-11 { flex: 0 0 91.666667% !important; max-width: 91.666667% !important; width: 91.666667% !important; }
+  .col-md-12 { flex: 0 0 100% !important; max-width: 100% !important; width: 100% !important; }
+}
+
+/* Breakpoint LG (>= 992px) */
+@media (min-width: 992px) {
+  .col-lg-1  { flex: 0 0 8.333333% !important; max-width: 8.333333% !important; width: 8.333333% !important; }
+  .col-lg-2  { flex: 0 0 16.666667% !important; max-width: 16.666667% !important; width: 16.666667% !important; }
+  .col-lg-3  { flex: 0 0 25% !important; max-width: 25% !important; width: 25% !important; }
+  .col-lg-4  { flex: 0 0 33.333333% !important; max-width: 33.333333% !important; width: 33.333333% !important; }
+  .col-lg-5  { flex: 0 0 41.666667% !important; max-width: 41.666667% !important; width: 41.666667% !important; }
+  .col-lg-6  { flex: 0 0 50% !important; max-width: 50% !important; width: 50% !important; }
+  .col-lg-7  { flex: 0 0 58.333333% !important; max-width: 58.333333% !important; width: 58.333333% !important; }
+  .col-lg-8  { flex: 0 0 66.666667% !important; max-width: 66.666667% !important; width: 66.666667% !important; }
+  .col-lg-9  { flex: 0 0 75% !important; max-width: 75% !important; width: 75% !important; }
+  .col-lg-10 { flex: 0 0 83.333333% !important; max-width: 83.333333% !important; width: 83.333333% !important; }
+  .col-lg-11 { flex: 0 0 91.666667% !important; max-width: 91.666667% !important; width: 91.666667% !important; }
+  .col-lg-12 { flex: 0 0 100% !important; max-width: 100% !important; width: 100% !important; }
+}
+
+/* ==========================================================================
+   2. MODAIS CANONICOS ADAPTATIVOS (Isolamento total de margens legadas)
+   ========================================================================== */
+.modal.erp-modal,
+.modal.fin-modal {
+  z-index: 2050 !important;
+  background-color: rgba(15, 23, 42, 0.65) !important;
+  padding: 16px !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.erp-modal .modal-dialog,
+.fin-modal .modal-dialog {
+  margin: 1.5rem auto !important;
+  width: 96% !important;
+  max-width: 920px;
+}
+
+/* Tamanhos Adaptativos de Modais */
+.modal-dialog-sm, .erp-modal-sm .modal-dialog { max-width: 440px !important; }
+.modal-dialog-md, .erp-modal-md .modal-dialog { max-width: 640px !important; }
+.modal-dialog-lg, .erp-modal-lg .modal-dialog { max-width: 840px !important; }
+.modal-dialog-xl, .erp-modal-xl .modal-dialog { max-width: 1080px !important; }
+.modal-dialog-auto, .erp-modal-auto .modal-dialog { width: auto !important; max-width: 95vw !important; }
+
+/* Anulacao estrita de conflitos herdados de perso.css */
+.erp-modal .modal-content,
+.fin-modal .modal-content {
+  border-radius: 12px !important;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.28) !important;
+  border: 0 !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  padding: 0 !important;
+  background-color: #ffffff !important;
+  overflow: hidden !important;
+}
+
+.erp-modal .modal-header,
+.fin-modal .modal-header {
+  padding: 14px 20px !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.erp-modal .modal-title,
+.fin-modal .modal-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.erp-modal .modal-header .fa,
+.fin-modal .modal-header .fa {
+  color: #38bdf8 !important;
+}
+
+.erp-modal .close,
+.fin-modal .close {
+  background: transparent !important;
+  border: 0 !important;
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.erp-modal .close:hover,
+.fin-modal .close:hover {
+  color: #ffffff !important;
+}
+
+.erp-modal .modal-body,
+.fin-modal .modal-body {
+  padding: 18px 22px !important;
+  max-height: 80vh !important;
+  overflow-y: auto !important;
+  background: #ffffff !important;
+}
+
+.erp-modal .modal-footer,
+.fin-modal .modal-footer {
+  padding: 12px 22px !important;
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+
+/* ==========================================================================
+   3. INPUTS E CONTROLES PADRONIZADOS
+   ========================================================================== */
+.erp-form-section,
+.fin-form-section {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 12px 16px 2px !important;
+  margin-bottom: 12px !important;
+}
+
+.erp-form-section-title,
+.fin-form-section-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-bottom: 10px !important;
+  padding-bottom: 4px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  text-transform: uppercase !important;
+  letter-spacing: .02em !important;
+}
+
+.erp-form-section-title i,
+.fin-form-section-title i {
+  color: #0284c7 !important;
+}
+
+.erp-modal label,
+.fin-modal label {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+  margin-bottom: 4px !important;
+}
+
+.erp-modal .form-control,
+.fin-modal .form-control,
+.erp-input {
+  height: 38px !important;
+  min-height: 38px !important;
+  line-height: 1.4 !important;
+  padding: 6px 12px !important;
+  font-size: 13.5px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  box-sizing: border-box !important;
+}
+
+.erp-modal .form-control:focus,
+.fin-modal .form-control:focus,
+.erp-input:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 .15rem rgba(2, 132, 199, 0.15) !important;
+  outline: none !important;
+}
+
+/* Simbolos Embutidos Dentro do Campo (R$, %, etc.) */
+.erp-field-prefix,
+.fin-field-prefix,
+.erp-field-suffix,
+.fin-field-suffix {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.erp-field-prefix > .erp-prefix,
+.fin-field-prefix > .fin-prefix {
+  position: absolute !important;
+  left: 11px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  pointer-events: none !important;
+  z-index: 3 !important;
+  line-height: 1 !important;
+}
+
+.erp-field-prefix > .form-control,
+.fin-field-prefix > .form-control {
+  padding-left: 36px !important;
+}
+
+.erp-field-suffix > .erp-suffix,
+.fin-field-suffix > .fin-suffix {
+  position: absolute !important;
+  right: 11px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  pointer-events: none !important;
+  z-index: 3 !important;
+  line-height: 1 !important;
+}
+
+.erp-field-suffix > .form-control,
+.fin-field-suffix > .form-control {
+  padding-right: 32px !important;
+}
+
+/* ==========================================================================
+   4. TABELAS E PAGINACAO LIMPA (Eliminacao definitiva de bullets verticais)
+   ========================================================================== */
+.erp-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+.erp-table thead th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  white-space: nowrap !important;
+  padding: 10px 12px !important;
+}
+
+.erp-table td {
+  padding: 8px 12px !important;
+  vertical-align: middle !important;
+  border-top: 1px solid #e2e8f0 !important;
+  font-size: 13px !important;
+}
+
+/* Reset Canonico da Paginacao (Extingue <ul> com pontinhos pretos) */
+.pagination,
+ul.pagination,
+.fin-pagination ul,
+.erp-pagination ul {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  padding-left: 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+  list-style-type: none !important;
+  gap: 3px !important;
+}
+
+.pagination li,
+ul.pagination li,
+.page-item {
+  display: inline-block !important;
+  list-style: none !important;
+  list-style-type: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.pagination li:before,
+ul.pagination li:before,
+.page-item:before {
+  content: none !important;
+  display: none !important;
+}
+
+.page-link {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  padding: 0 8px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.page-link:hover {
+  color: #0284c7 !important;
+  background-color: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  text-decoration: none !important;
+}
+
+.page-item.active .page-link {
+  color: #ffffff !important;
+  background-color: #0284c7 !important;
+  border-color: #0284c7 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3) !important;
+}
+
+.page-item.disabled .page-link {
+  color: #94a3b8 !important;
+  pointer-events: none !important;
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Seletor de Limite de Itens da Paginação (Anti-Corte / Conteúdo Limpo) */
+.erp-select-limite,
+.erp-pagination-container select,
+.erp-pagination select {
+  height: 36px !important;
+  min-height: 36px !important;
+  line-height: 1.4 !important;
+  padding: 6px 30px 6px 12px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+.erp-select-limite:focus,
+.erp-pagination-container select:focus,
+.erp-pagination select:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 .15rem rgba(2, 132, 199, 0.15) !important;
+  outline: none !important;
+}
+
+/* ==========================================================================
+   4.1 BOTÕES DE AÇÃO COMPACTOS PARA TABELAS (Design Limpo com Tooltips)
+   ========================================================================== */
+.erp-acoes-wrapper,
+.cli-acoes-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  flex-wrap: nowrap !important;
+}
+
+.erp-btn-acao,
+.cli-btn-acao {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  border: 1px solid transparent !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease-in-out !important;
+  box-shadow: none !important;
+  line-height: 1 !important;
+  outline: none !important;
+}
+
+.erp-btn-acao i,
+.cli-btn-acao i {
+  font-size: 13px !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+}
+
+/* Variantes Semânticas de Ação */
+.erp-btn-acao.btn-acao-ver,
+.cli-btn-acao.btn-acao-ver {
+  background: #e0f2fe !important;
+  border-color: #bae6fd !important;
+  color: #0284c7 !important;
+}
+.erp-btn-acao.btn-acao-ver:hover,
+.cli-btn-acao.btn-acao-ver:hover {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35) !important;
+}
+
+.erp-btn-acao.btn-acao-editar,
+.cli-btn-acao.btn-acao-editar {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+.erp-btn-acao.btn-acao-editar:hover,
+.cli-btn-acao.btn-acao-editar:hover {
+  background: #334155 !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(51, 65, 85, 0.35) !important;
+}
+
+.erp-btn-acao.btn-acao-sucesso {
+  background: #dcfce7 !important;
+  border-color: #bbf7d0 !important;
+  color: #16a34a !important;
+}
+.erp-btn-acao.btn-acao-sucesso:hover {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.35) !important;
+}
+
+.erp-btn-acao.btn-acao-reativar,
+.cli-btn-acao.btn-acao-reativar {
+  background: #fef3c7 !important;
+  border-color: #fde68a !important;
+  color: #d97706 !important;
+}
+.erp-btn-acao.btn-acao-reativar:hover,
+.cli-btn-acao.btn-acao-reativar:hover {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35) !important;
+}
+
+.erp-btn-acao.btn-acao-excluir,
+.cli-btn-acao.btn-acao-excluir {
+  background: #fee2e2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+.erp-btn-acao.btn-acao-excluir:hover,
+.cli-btn-acao.btn-acao-excluir:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35) !important;
+}
+
+/* ==========================================================================
+   4.2 BOTÕES DE FILTRO EM PÍLULA (Segmentados e Responsivos)
+   ========================================================================== */
+.erp-filter-pill,
+.cli-filtro-btn {
+  border-radius: 20px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 5px 13px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  transition: all .15s ease !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+  outline: none !important;
+}
+
+.erp-filter-pill:hover,
+.cli-filtro-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+.erp-filter-pill.active,
+.cli-filtro-btn.active {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, .25) !important;
+}
+
+/* ==========================================================================
+   4.3 CABEÇALHO DE TABELA ORDENÁVEL (Crescente & Decrescente)
+   ========================================================================== */
+th.sortable,
+th.erp-sortable {
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: background-color 0.15s ease !important;
+  position: relative !important;
+}
+
+th.sortable:hover,
+th.erp-sortable:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+th.sortable .sort-icon,
+th.erp-sortable .sort-icon {
+  margin-left: 6px !important;
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  transition: color 0.15s ease !important;
+}
+
+th.sortable.asc .sort-icon,
+th.erp-sortable.asc .sort-icon,
+th.sortable.desc .sort-icon,
+th.erp-sortable.desc .sort-icon {
+  color: #0284c7 !important;
+}
+
+/* ==========================================================================
+   5. CARDS DE KPI COMPACTOS (Design Limpo Enterprise & Linha Unica)
+   ========================================================================== */
+.erp-kpi-card {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 4px solid #0284c7 !important;
+  border-radius: 8px !important;
+  padding: 14px 18px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  min-height: 72px !important;
+  transition: all 0.2s ease-in-out !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.erp-kpi-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.erp-kpi-card .kpi-content,
+.erp-kpi-card .erp-kpi-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.erp-kpi-card .kpi-label,
+.erp-kpi-card .erp-kpi-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.erp-kpi-card .kpi-value,
+.erp-kpi-card .erp-kpi-value {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em !important;
+  margin: 0 !important;
+}
+
+.erp-kpi-card .kpi-icon,
+.erp-kpi-card .erp-kpi-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 50% !important;
+  font-size: 18px !important;
+  flex-shrink: 0 !important;
+  margin-left: 14px !important;
+  margin-right: 0 !important;
+}
+
+/* Variantes Semânticas de KPI Cards (Borda Lateral + Ícone Temático) */
+.erp-kpi-warning { border-left: 4px solid #f59e0b !important; }
+.erp-kpi-warning .kpi-icon,
+.erp-kpi-warning .erp-kpi-icon { background: #fef3c7 !important; color: #d97706 !important; }
+
+.erp-kpi-danger { border-left: 4px solid #ef4444 !important; }
+.erp-kpi-danger .kpi-icon,
+.erp-kpi-danger .erp-kpi-icon { background: #fee2e2 !important; color: #dc2626 !important; }
+
+.erp-kpi-success { border-left: 4px solid #10b981 !important; }
+.erp-kpi-success .kpi-icon,
+.erp-kpi-success .erp-kpi-icon { background: #d1fae5 !important; color: #059669 !important; }
+
+.erp-kpi-primary { border-left: 4px solid #0284c7 !important; }
+.erp-kpi-primary .kpi-icon,
+.erp-kpi-primary .erp-kpi-icon { background: #e0f2fe !important; color: #0284c7 !important; }
+
+.erp-kpi-info { border-left: 4px solid #8b5cf6 !important; }
+.erp-kpi-info .kpi-icon,
+.erp-kpi-info .erp-kpi-icon { background: #ede9fe !important; color: #7c3aed !important; }
+
+/* ==========================================================================
+   6. CONTROLES DE ESCOLHA (Switches, Checkboxes & Radios Customizados)
+   ========================================================================== */
+/* Switch Toggle Moderno (iOS / Enterprise) */
+.erp-switch {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.erp-switch input[type="checkbox"] {
+  position: absolute !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.erp-switch-slider {
+  position: relative !important;
+  width: 38px !important;
+  height: 22px !important;
+  background-color: #cbd5e1 !important;
+  border-radius: 22px !important;
+  transition: all 0.2s ease-in-out !important;
+  flex-shrink: 0 !important;
+}
+
+.erp-switch-slider:before {
+  position: absolute !important;
+  content: "" !important;
+  height: 16px !important;
+  width: 16px !important;
+  left: 3px !important;
+  bottom: 3px !important;
+  background-color: #ffffff !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease-in-out !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2) !important;
+}
+
+.erp-switch input:checked + .erp-switch-slider {
+  background-color: #0284c7 !important;
+}
+
+.erp-switch input:checked + .erp-switch-slider:before {
+  transform: translateX(16px) !important;
+}
+
+.erp-switch-label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+}
+
+/* Checkbox Customizado */
+.erp-checkbox {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  user-select: none !important;
+}
+
+.erp-checkbox input[type="checkbox"] {
+  position: absolute !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.erp-checkbox-box {
+  width: 18px !important;
+  height: 18px !important;
+  border: 1.5px solid #94a3b8 !important;
+  border-radius: 4px !important;
+  background-color: #ffffff !important;
+  transition: all 0.15s ease-in-out !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.erp-checkbox-box:after {
+  content: "" !important;
+  display: none !important;
+  width: 5px !important;
+  height: 9px !important;
+  border: solid #ffffff !important;
+  border-width: 0 2px 2px 0 !important;
+  transform: rotate(45deg) !important;
+  margin-bottom: 2px !important;
+}
+
+.erp-checkbox input:checked + .erp-checkbox-box {
+  background-color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+
+.erp-checkbox input:checked + .erp-checkbox-box:after {
+  display: block !important;
+}
+
+/* Radio Customizado */
+.erp-radio {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  user-select: none !important;
+}
+
+.erp-radio input[type="radio"] {
+  position: absolute !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.erp-radio-circle {
+  width: 18px !important;
+  height: 18px !important;
+  border: 1.5px solid #94a3b8 !important;
+  border-radius: 50% !important;
+  background-color: #ffffff !important;
+  transition: all 0.15s ease-in-out !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.erp-radio-circle:after {
+  content: "" !important;
+  display: none !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background-color: #ffffff !important;
+}
+
+.erp-radio input:checked + .erp-radio-circle {
+  background-color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+
+.erp-radio input:checked + .erp-radio-circle:after {
+  display: block !important;
+}
+
+/* Segmented Control (Botoes em Pilula Agrupados) */
+.erp-segmented-control {
+  display: inline-flex !important;
+  background: #f1f5f9 !important;
+  padding: 3px !important;
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  gap: 2px !important;
+}
+
+.erp-segmented-control label {
+  margin: 0 !important;
+  padding: 6px 14px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease-in-out !important;
+  user-select: none !important;
+}
+
+.erp-segmented-control input[type="radio"] {
+  display: none !important;
+}
+
+.erp-segmented-control input[type="radio"]:checked + span {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1) !important;
+  border-radius: 6px !important;
+  padding: 6px 14px !important;
+  display: inline-block !important;
+}
+
+/* ==========================================================================
+   7. BADGES SEMÂNTICOS DE STATUS (.erp-badge)
+   ========================================================================== */
+.erp-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 3px 9px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  line-height: 1.3 !important;
+  white-space: nowrap !important;
+  border: 1px solid transparent !important;
+}
+
+.erp-badge-pill { border-radius: 9999px !important; }
+
+.erp-badge-success { background: #dcfce7 !important; color: #15803d !important; border-color: #bbf7d0 !important; }
+.erp-badge-danger  { background: #fee2e2 !important; color: #b91c1c !important; border-color: #fecaca !important; }
+.erp-badge-warning { background: #fef9c3 !important; color: #854d0e !important; border-color: #fef08a !important; }
+.erp-badge-info    { background: #e0f2fe !important; color: #0369a1 !important; border-color: #bae6fd !important; }
+.erp-badge-neutral { background: #f1f5f9 !important; color: #475569 !important; border-color: #e2e8f0 !important; }
+
+.erp-badge-dot:before {
+  content: "" !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background-color: currentColor !important;
+}
+
+/* ==========================================================================
+   8. NOTIFICAÇÕES NÃO BLOQUEANTES (TOASTS FLUTUANTES)
+   ========================================================================== */
+.erp-toast-container {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  pointer-events: none !important;
+}
+
+.erp-toast {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  min-width: 300px !important;
+  max-width: 420px !important;
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+  border-left: 4px solid #0284c7 !important;
+  padding: 12px 16px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  animation: erpSlideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.erp-toast:hover {
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.2), 0 4px 10px rgba(15, 23, 42, 0.1) !important;
+  transform: translateY(-2px) !important;
+}
+
+@keyframes erpSlideInRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.erp-toast-success { border-left-color: #10b981 !important; }
+.erp-toast-danger  { border-left-color: #ef4444 !important; }
+.erp-toast-warning { border-left-color: #f59e0b !important; }
+.erp-toast-info    { border-left-color: #0284c7 !important; }
+
+.erp-toast-icon { font-size: 18px !important; line-height: 1 !important; margin-top: 2px !important; flex-shrink: 0 !important; }
+.erp-toast-success .erp-toast-icon { color: #10b981 !important; }
+.erp-toast-danger  .erp-toast-icon { color: #ef4444 !important; }
+.erp-toast-warning .erp-toast-icon { color: #f59e0b !important; }
+.erp-toast-info    .erp-toast-icon { color: #0284c7 !important; }
+
+.erp-toast-body { flex: 1 !important; }
+.erp-toast-title { font-size: 13.5px !important; font-weight: 700 !important; color: #0f172a !important; margin-bottom: 2px !important; }
+.erp-toast-message { font-size: 12.5px !important; color: #475569 !important; line-height: 1.4 !important; }
+
+.erp-toast-close {
+  background: transparent !important;
+  border: 0 !important;
+  color: #94a3b8 !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  margin-left: 8px !important;
+}
+.erp-toast-close:hover { color: #0f172a !important; }
+
+/* ==========================================================================
+   9. EMPTY STATE CANONICO (.erp-empty-state)
+   ========================================================================== */
+.erp-empty-state {
+  text-align: center !important;
+  padding: 40px 20px !important;
+  background: #ffffff !important;
+  border-radius: 8px !important;
+}
+
+.erp-empty-state-icon {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 50% !important;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 24px !important;
+  margin-bottom: 14px !important;
+}
+
+.erp-empty-state-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  margin-bottom: 6px !important;
+}
+
+.erp-empty-state-desc {
+  font-size: 13px !important;
+  color: #64748b !important;
+  max-width: 400px !important;
+  margin: 0 auto 16px !important;
+  line-height: 1.4 !important;
+}
+
+/* ==========================================================================
+   10. ESTADO DE CARREGAMENTO DE BOTÕES (Spinner Anti-Duplo Clique)
+   ========================================================================== */
+.erp-btn-loading {
+  position: relative !important;
+  pointer-events: none !important;
+  opacity: 0.85 !important;
+}
+
+.erp-btn-spinner {
+  display: inline-block !important;
+  width: 14px !important;
+  height: 14px !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 50% !important;
+  border-top-color: #ffffff !important;
+  animation: erpSpin 0.6s linear infinite !important;
+  margin-right: 6px !important;
+  vertical-align: middle !important;
+}
+
+.btn-default .erp-btn-spinner,
+.btn-outline-primary .erp-btn-spinner {
+  border-color: rgba(2, 132, 199, 0.2) !important;
+  border-top-color: #0284c7 !important;
+}
+
+@keyframes erpSpin {
+  to { transform: rotate(360deg); }
+}
+
+
+/* ==========================================================================
+   11. MENU LATERAL COMPACTO / SIDEBAR MINI ENTERPRISE (Padrao de Mercado)
+   ========================================================================== */
+/* Esconde a barra de rolagem feia do menu lateral preservando a rolagem funcional */
+.sidebar,
+.main-sidebar {
+  overflow-y: auto !important;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE e Edge legado */
+}
+.sidebar::-webkit-scrollbar,
+.main-sidebar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Estilização nítida e intuitiva do botão hamburguer */
+.sidebar-toggle-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  background-color: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease-in-out !important;
+}
+.sidebar-toggle-btn:hover {
+  background-color: #e2e8f0 !important;
+  color: #0284c7 !important;
+  border-color: #cbd5e1 !important;
+}
+.sidebar-toggle-btn:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25) !important;
+}
+
+@media (min-width: 769px) {
+  /* Alinha a main-header ao lado da sidebar (não deixa o sidebar cobrir o topo da navbar) */
+  .main-header {
+    margin-left: 250px !important;
+    transition: margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  /* Transições suaves de largura e margem */
+  .main-sidebar {
+    transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease !important;
+  }
+  .content-wrapper,
+  .main-footer {
+    transition: margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  /* Estado Compacto (Sidebar Mini) */
+  body.sidebar-collapse .main-sidebar,
+  body.sidebar-collapsed .main-sidebar,
+  html.sidebar-collapsed-initial body .main-sidebar {
+    width: 64px !important;
+    transform: none !important;
+    overflow-x: hidden !important;
+  }
+
+  body.sidebar-collapse .main-header,
+  body.sidebar-collapsed .main-header,
+  html.sidebar-collapsed-initial body .main-header,
+  body.sidebar-collapse .content-wrapper,
+  body.sidebar-collapsed .content-wrapper,
+  html.sidebar-collapsed-initial body .content-wrapper,
+  body.sidebar-collapse .main-footer,
+  body.sidebar-collapsed .main-footer,
+  html.sidebar-collapsed-initial body .main-footer {
+    margin-left: 64px !important;
+  }
+
+  /* Esconde textos, nomes e setas no modo compacto */
+  body.sidebar-collapse .brand-link span,
+  body.sidebar-collapsed .brand-link span,
+  body.sidebar-collapse .user-panel .info,
+  body.sidebar-collapsed .user-panel .info,
+  body.sidebar-collapse .nav-sidebar .nav-link span,
+  body.sidebar-collapsed .nav-sidebar .nav-link span,
+  body.sidebar-collapse .nav-sidebar .nav-header,
+  body.sidebar-collapsed .nav-sidebar .nav-header,
+  body.sidebar-collapse .nav-sidebar .nav-arrow,
+  body.sidebar-collapsed .nav-sidebar .nav-arrow,
+  body.sidebar-collapse .nav-sidebar .badge,
+  body.sidebar-collapsed .nav-sidebar .badge {
+    display: none !important;
+    opacity: 0 !important;
+  }
+
+  /* Centraliza logotipo e ícones no modo compacto */
+  body.sidebar-collapse .brand-link,
+  body.sidebar-collapsed .brand-link {
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+  body.sidebar-collapse .brand-link i,
+  body.sidebar-collapsed .brand-link i {
+    margin-right: 0 !important;
+    font-size: 20px !important;
+  }
+
+  body.sidebar-collapse .user-panel,
+  body.sidebar-collapsed .user-panel {
+    justify-content: center !important;
+    padding: 10px 0 !important;
+    margin-bottom: 10px !important;
+  }
+  body.sidebar-collapse .user-panel .image,
+  body.sidebar-collapsed .user-panel .image {
+    margin: 0 !important;
+  }
+
+  body.sidebar-collapse .sidebar,
+  body.sidebar-collapsed .sidebar {
+    padding: 10px 6px !important;
+  }
+
+  body.sidebar-collapse .nav-sidebar .nav-link,
+  body.sidebar-collapsed .nav-sidebar .nav-link {
+    justify-content: center !important;
+    padding: 10px 0 !important;
+    gap: 0 !important;
+    border-radius: 8px !important;
+  }
+
+  body.sidebar-collapse .nav-sidebar .nav-icon,
+  body.sidebar-collapsed .nav-sidebar .nav-icon {
+    width: 100% !important;
+    margin: 0 !important;
+    font-size: 18px !important;
+    text-align: center !important;
+  }
+
+  /* Fecha submenus que estejam abertos para não quebrar a coluna de 64px */
+  body.sidebar-collapse .nav-sidebar .has-treeview > .nav-treeview,
+  body.sidebar-collapsed .nav-sidebar .has-treeview > .nav-treeview {
+    display: none !important;
+  }
+
+  /* EXPANSÃO AO PASSAR O MOUSE (Hover Inteligente Enterprise) */
+  body.sidebar-collapse .main-sidebar:hover,
+  body.sidebar-collapsed .main-sidebar:hover {
+    width: 250px !important;
+    box-shadow: 12px 0 32px rgba(15, 23, 42, 0.35) !important;
+    z-index: 1050 !important;
+  }
+
+  body.sidebar-collapse .main-sidebar:hover .brand-link,
+  body.sidebar-collapsed .main-sidebar:hover .brand-link {
+    justify-content: flex-start !important;
+    padding: 0 18px !important;
+  }
+  body.sidebar-collapse .main-sidebar:hover .brand-link i,
+  body.sidebar-collapsed .main-sidebar:hover .brand-link i {
+    margin-right: 8px !important;
+  }
+
+  body.sidebar-collapse .main-sidebar:hover .user-panel,
+  body.sidebar-collapsed .main-sidebar:hover .user-panel {
+    justify-content: flex-start !important;
+    padding: 0 0 16px 0 !important;
+    margin-bottom: 16px !important;
+  }
+
+  body.sidebar-collapse .main-sidebar:hover .sidebar,
+  body.sidebar-collapsed .main-sidebar:hover .sidebar {
+    padding: 16px !important;
+  }
+
+  body.sidebar-collapse .main-sidebar:hover .nav-sidebar .nav-link,
+  body.sidebar-collapsed .main-sidebar:hover .nav-sidebar .nav-link {
+    justify-content: flex-start !important;
+    padding: 10px 12px !important;
+    gap: 10px !important;
+  }
+
+  body.sidebar-collapse .main-sidebar:hover .nav-sidebar .nav-icon,
+  body.sidebar-collapsed .main-sidebar:hover .nav-sidebar .nav-icon {
+    width: 20px !important;
+    font-size: 16px !important;
+  }
+
+  body.sidebar-collapse .main-sidebar:hover .brand-link span,
+  body.sidebar-collapsed .main-sidebar:hover .brand-link span,
+  body.sidebar-collapse .main-sidebar:hover .user-panel .info,
+  body.sidebar-collapsed .main-sidebar:hover .user-panel .info,
+  body.sidebar-collapse .main-sidebar:hover .nav-sidebar .nav-link span,
+  body.sidebar-collapsed .main-sidebar:hover .nav-sidebar .nav-link span,
+  body.sidebar-collapse .main-sidebar:hover .nav-sidebar .nav-header,
+  body.sidebar-collapsed .main-sidebar:hover .nav-sidebar .nav-header,
+  body.sidebar-collapse .main-sidebar:hover .nav-sidebar .nav-arrow,
+  body.sidebar-collapsed .main-sidebar:hover .nav-sidebar .nav-arrow,
+  body.sidebar-collapse .main-sidebar:hover .nav-sidebar .badge,
+  body.sidebar-collapsed .main-sidebar:hover .nav-sidebar .badge {
+    display: inline-block !important;
+    opacity: 1 !important;
+  }
+
+  body.sidebar-collapse .main-sidebar:hover .nav-sidebar .has-treeview.menu-open > .nav-treeview,
+  body.sidebar-collapsed .main-sidebar:hover .nav-sidebar .has-treeview.menu-open > .nav-treeview {
+    display: block !important;
+  }
+}
+
+/* ==========================================================================
+   Campos de valor (R$) e percentual — símbolo embutido no próprio campo
+   --------------------------------------------------------------------------
+   Uso:
+     <span class="campo-valor campo-valor--prefixo" data-simbolo="R$">
+       <input type="text" data-mask="moeda" class="form-control" name="...">
+     </span>
+     <span class="campo-valor campo-valor--sufixo" data-simbolo="%">
+       <input type="text" data-mask="percent" class="form-control" name="...">
+     </span>
+   A máscara ao vivo é aplicada por window.aplicarMascarasValor() (footer.php).
+   Símbolo desenhado via ::after a partir de data-simbolo (sem <span> extra).
+   ========================================================================== */
+.campo-valor {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.campo-valor > input {
+  width: 100%;
+}
+.campo-valor::after {
+  content: attr(data-simbolo);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #64748b;
+  pointer-events: none;
+  z-index: 3;
+}
+.campo-valor--prefixo::after { left: 11px; }
+/* especificidade 0,0,2,1 (classe.classe > tipo) para vencer
+   `.erp-modal .form-control { padding: ... !important }` (0,0,2,0) e não
+   deixar o símbolo R$/% sobrepor o conteúdo do input dentro de modais. */
+.campo-valor.campo-valor--prefixo > input,
+.campo-valor.campo-valor--prefixo > .form-control { padding-left: 34px !important; }
+.campo-valor--sufixo::after { right: 11px; }
+.campo-valor.campo-valor--sufixo > input,
+.campo-valor.campo-valor--sufixo > .form-control {
+  padding-right: 30px !important;
+  text-align: right !important;
+}
+.campo-valor.form-control-sm-wrap::after,
+.campo-valor--sm::after { font-size: 11.5px; }

@@ -1,0 +1,7 @@
+dev.sqlite
+*.sqlite
+.env
+uploads/*
+!uploads/.gitkeep
+*.xlsx
+vendor/

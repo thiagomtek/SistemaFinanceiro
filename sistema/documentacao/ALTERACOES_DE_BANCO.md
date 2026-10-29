@@ -1,0 +1,18 @@
+# Alterações de estrutura do banco
+
+Banco: `financeiro` (MariaDB 10.5, contêiner `fin_db`). Este é um sistema novo, sem banco legado. Este arquivo apenas registra mudanças de estrutura (ex.: nova coluna ou tabela) aplicadas depois da criação inicial, com data, motivo e backup. Cada alteração fica em `sql/alteracoes/AAAAMMDD_descricao.sql`, escrita para poder rodar mais de uma vez sem erro, e o mesmo ajuste é refletido em `sql/schema.sql`.
+
+| Alteração | Data | Descrição | Backup | Autorizada por | Status |
+|---|---|---|---|---|---|
+| `sql/schema.sql` | 26/10/2026 | Schema inicial (10 tabelas), criado automaticamente na primeira subida do volume `fin_db_data` em banco novo e vazio | n/a (banco novo) | Thiago (liberdade de atuação no servidor) | Aplicada; MariaDB 10.5.29 |
+| `sql/alteracoes/20261026_ajustes_e_categorias_de_sistema.sql` | 26/10/2026 | Coluna `lancamentos.ajuste` (saldo/fatura) e `categorias.sistema`, para reajustes de saldo e de fatura | `backups/` na pasta do serviço (dump antes da alteração) | Thiago | Aplicada em 26/10/2026 (backup `financeiro_antes_ajustes_20261026_130516.sql`) |
+| `sql/alteracoes/20261026_ignorar_observacao_anexos_filtros.sql` | 26/10/2026 | Colunas `lancamentos.ignorar` e `observacao`; tabelas `anexos` e `filtros_salvos` | dump em `backups/` antes da aplicação | Thiago | Ver status no registro da publicação v1.3.0 |
+
+| `sql/alteracoes/20261026_investimentos_cdi_transferencias.sql` | 26/10/2026 | Colunas de indexador/tributação em `investimentos`, `lancamentos.investimento_id` e `sentido_invest`, `investimento_movs` com IR/IOF/vínculo ao lançamento, tabelas `indices` e `parametros` | dump em `backups/` antes da aplicação | Thiago | Ver registro da publicação v1.4.0 |
+
+| `sql/alteracoes/20261026_recorrencia_fixa.sql` | 26/10/2026 | Colunas `lancamentos.recorrencia` (fixa = sem fim) e `lancamentos.periodo`, para gerar as próximas ocorrências de receitas/despesas fixas | dump em `backups/` antes da aplicação | Thiago | Ver registro da publicação v1.8.0 |
+| `sql/alteracoes/20261026_usuarios_permissoes.sql` | 26/10/2026 | Colunas `usuarios.papel`, `ativo`, `dono_id`, `ultimo_acesso`; tabelas `usuario_permissoes` e `notificacoes` | dump em `backups/` antes da aplicação | Thiago | Ver registro da publicação v1.11.0 |
+
+| `sql/alteracoes/20261027_indices_lancamentos.sql` | 27/10/2026 | Índices `ix_lanc_grupo (perfil_id, grupo_id)` e `ix_lanc_efet (perfil_id, efetivado, data)` em `lancamentos`; coluna `ignorar` marcada como sem uso (a função foi retirada) | dump em `backups/` antes da aplicação | Thiago (revisão geral de 27/10/2026) | **Aplicada em produção em 29/10/2026** (backup `financeiro_antes_v1_12_0_20261029_092344.sql`); `SHOW INDEX` confirmou os dois índices e a segunda execução do mesmo arquivo rodou sem erro |
+
+| `sql/alteracoes/20261029_push_assinaturas.sql` | 29/10/2026 | Tabela `push_assinaturas` (um registro por aparelho/navegador do usuário: endereço, chaves públicas e hash único do endereço) para as notificações push. Não altera tabelas existentes | dump em `backups/` antes da aplicação | Thiago (pedido de notificação push, 29/10/2026) | **Aplicada em produção em 29/10/2026** (backup `financeiro_antes_v1_13_0_push_20261029_104049.sql`); colunas conferidas e a segunda execução do arquivo rodou sem erro |

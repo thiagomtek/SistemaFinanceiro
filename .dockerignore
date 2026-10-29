@@ -1,0 +1,7 @@
+.git
+.env
+*.xlsx
+*.sqlite
+tests
+uploads/tmp
+README.md

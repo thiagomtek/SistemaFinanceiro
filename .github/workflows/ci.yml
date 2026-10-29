@@ -1,0 +1,33 @@
+name: Validar Sistema Financeiro
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sintaxe-e-testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli bash tools/ci/validar_php.sh
+      # Regras de negocio e importacao contra SQLite em memoria (planilha opcional: o teste pula se nao existir)
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_dominio.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_reajustes_mobills.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_fatura_import.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_p2.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_investimentos.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_extrato.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_projecao.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_usuarios.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_revisao.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_push.php
+      - run: docker run --rm -v "$PWD:/app" -w /app composer:2.2 validate --no-check-publish
