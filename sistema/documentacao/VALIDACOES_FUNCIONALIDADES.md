@@ -354,3 +354,21 @@ Pendências / ressalvas:
 - Cinco linhas "Reajuste de fatura" (R$ 319,70 em dez, jan e fev; R$ 76,20 em dez e jan) não foram associadas a cartão habilitado e entraram só como pagamento na conta.
 - Reverter: restaurar o backup acima, ou apagar os lançamentos da importação #10, as 20 linhas novas de `faturas` (meses antigos) e devolver `saldo_inicial` (Itaú 0,00; Nubank 4.036,06).
 - A hora da release (14:33) é a do fechamento do código; o contêiner novo subiu às 14:36. Nada foi commitado.
+
+## Complemento das parcelas do financiamento do carro, 25/48 a 48/48 (carga de dados, sem alterar o código do app) — 29/10/2026, 15:20
+
+**Status: validada com ressalvas.**
+
+Arquivos: `tools/carga/completar_parcelas.php` (novo). Código do app, banco (estrutura) e `config_versao.php` **não mudaram**: a versão em produção segue 1.13.2 (o `AGENTS.md` pede subir a versão a cada alteração; como a imagem do app não mudou, a versão não foi incrementada, por decisão proposta ao Thiago e não contestada).
+
+O que foi feito: a série `Carro(n/48)` (grupo `8df7ca905e68802c`, Itaú, Transporte, R$ 1.979,62, dia 4) vinha da planilha do Mobills só até 24/48 (mar/2028). Foram criadas as 24 parcelas que faltam, 25/48 (04/04/2028) a 48/48 (04/03/2030), pendentes, no mesmo grupo, ligadas à importação #11 (tipo `ajuste`, "Complemento: parcelas 25 a 48 de Carro"). Total R$ 47.510,88; o pendente do financiamento passou de R$ 33.653,54 (17 parcelas) para R$ 81.164,42 (41 parcelas). Premissa confirmada pelo Thiago: 48 parcelas fixas, sem reajuste, dia 4 mesmo em fim de semana.
+
+Verificado:
+- Cópia descartável do banco (MariaDB 10.5, restaurada de backup): plano e gravação de 24 parcelas; segunda execução responde "série já completa" e não duplica; o script confere contagem e soma de lançamentos, parcelas existentes, saldos atual e previsto, investimentos e faturas antes de confirmar. Projeção de 60 meses antes/depois: nada muda até mar/2028; de abr/2028 a mar/2030 a despesa mensal passa de R$ 953,05 para R$ 2.932,67 (+ R$ 1.979,62) e volta a R$ 953,05 em abr/2030; a média da Projeção (R$ 953,05 / R$ 0) não mudou. Telas `index`, `lancamentos` (abr/2028, mar/2030 e busca "Carro") e `projecao` com 200 e sem erro PHP; a parcela aparece como "Carro(25/48) · Transporte · Itaú · − R$ 1.979,62".
+- Produção: backup `backups/financeiro_antes_parcelas_carro_prod_20261029_152012.sql`; lançamentos 849 → 873, grupo do carro 23 → 47 linhas (a 5/48, paga pelo Nubank, está em outro grupo e não foi tocada), faturas 24 e soma dos movimentos de investimento (R$ 200.783,18) e saldos iniciais das contas iguais; execução pelo `fin_app` (`docker exec`), sem rebuild nem reinício; script e cópias temporárias removidos.
+
+Pendências / ressalvas:
+- Não vista em navegador real nem com a sessão do Thiago em produção.
+- As parcelas existentes foram replicadas como estão; se o financiamento for quitado antes ou tiver correção, as futuras precisam ser ajustadas ou excluídas ("todas", no grupo).
+- Reverter: apagar os lançamentos com `importacao_id = 11` e a linha 11 de `importacoes` (ou restaurar o backup acima).
+- Nada commitado ainda (`tools/carga/completar_parcelas.php` e esta entrada).
