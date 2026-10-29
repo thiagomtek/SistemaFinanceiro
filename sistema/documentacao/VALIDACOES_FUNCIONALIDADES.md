@@ -326,3 +326,31 @@ Pendências / ressalvas:
 - Não publicado e não visto em navegador real. A permissão de escrita em `/var/www/uploads/.sessoes` no `fin_app` é criada em tempo de execução (se falhar, cai no diretório padrão de sessões, que não sobrevive à troca do contêiner).
 - Sessões já abertas antes desta versão seguem com a regra de 8 h até o próximo login.
 - Segurança: sessão sem expiração em aparelho perdido/compartilhado só se encerra pelo Sair; não há tela para revogar sessões.
+
+## v1.13.2 — média da projeção sem o histórico importado + carga do histórico do Mobills (build 20261029.4) — 29/10/2026, 14:36
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/servicos/ProjecaoService.php` (`sql_sem_historico`, usado na média), `tools/carga/carga_historico.php` (novo), `tools/ci/testes_projecao.php`, `config_versao.php`, `config_novidades.php`, `documentacao/REQUISITOS_E_REGRAS_DE_NEGOCIO.md` (RN-32). Sem alteração de estrutura do banco: o histórico é marcado com `importacoes.tipo = 'historico'` (coluna que já existia).
+
+Regra (RN-32, autorizada pelo Thiago em 29/10/2026): a média dos 3 últimos meses completos da Projeção ignora lançamentos de importações marcadas como histórico. Motivo medido na cópia: sem isso a média de despesas ia de R$ 953 para R$ 11.074, a de receitas de R$ 0 para R$ 7.998 e o patrimônio projetado em set/2027 de R$ 195 mil para R$ 177 mil (salário e faturas contados em dobro).
+
+Carga (`planilha RELATORIO_TRANSACOES`, Mobills; só contas e cartões já cadastrados; antes de 01/10/2026):
+- 20 faturas pagas de cartões habilitados (Nubank 9, Black Personalite 3, AMAZON 8), cada uma como **um item único** "Fatura <cartão> <mês> (histórico)" (`ajuste = fatura`) + registro em `faturas` + pagamento na conta pagadora. O mapeamento valor → cartão é inferido (a exportação não traz o cartão) e foi confirmado pelo Thiago. LUIZA (desabilitado) não recebeu nada.
+- 208 movimentações de Itaú e Nubank (inclui 37 reajustes de saldo, 5 pagamentos de fatura de cartão não habilitado e 3 categorias novas: Investimento, Restaurante e Vestuário; "Outros" de receita foi para "Outras receitas").
+- Ficaram de fora: 34 linhas de BV e PicPay (contas inexistentes) + 8 transferências com essas contas; a linha pendente "INATEL(7/11)" de 30/09 (R$ 861,75, conta em aberto: mudaria o saldo previsto do Nubank); 16 linhas de outubro em diante.
+- Os saldos foram preservados compensando `contas.saldo_inicial` pelo efeito líquido (Itaú 0,00 → −44.338,81; Nubank 4.036,06 → 29.779,52). O script desfaz tudo se saldo atual, saldo previsto, cadastro de contas, cartões, investimentos ou lançamentos de outubro em diante mudarem.
+
+Verificado:
+- Sintaxe e as 10 suítes de teste em PHP 7.4.33 (contêiner descartável da VM, sem rede), incluindo o teste novo de RN-32.
+- Em cópia descartável do banco (MariaDB 10.5, restaurada do backup): conferência de segurança pegou o efeito da linha pendente (corrigido); carga aplicada, saldos atual e previsto idênticos, segunda execução sem duplicar (0 importados, 0 faturas novas); Projeção idêntica antes e depois (média R$ 953,05 / R$ 0); 14 telas autenticadas (dashboard, lançamentos de jun e set e "todos", cartões, 3 faturas, contas, categorias, projeção, investimentos, importar fatura) responderam 200 sem erro PHP, e a fatura Nubank jun/26 aparece "Paga em 03/06/2026" com R$ 4.253,95.
+- Produção: backup `backups/financeiro_antes_carga_historico_20261029_143712.sql` (e `financeiro_antes_historico_20261029_142707.sql`); imagem anterior guardada como `sistema-financeiro-fin_app:rollback-1.13.1`; troca só do `fin_app` (`up -d --no-deps`), `fin_db` e os demais serviços sem reinício; execução da versão 1.13.2 confirmada no contêiner; login 200 e `cron_notificacoes.php` 403 pelo Caddy; log sem erro PHP. Contagens depois da carga: lançamentos 600 → 848 (+208 +20 itens +20 pagamentos), faturas 3 → 23, contas 2, cartões 4, movimentos de investimento 43 com a mesma soma (R$ 200.783,18), lançamentos de outubro em diante 451 (iguais).
+- Arquivos temporários removidos (planilha do contêiner e da VM, contêineres e rede `fin_tmp_*`).
+
+Pendências / ressalvas:
+- Não vista em navegador real nem com sessão do Thiago em produção; a Projeção em produção não foi executada (a função grava índices e séries), só na cópia.
+- As faturas antigas têm total, mas **não têm as compras item a item**; se o Thiago enviar os PDFs, é possível trocar o item único pelos itens reais.
+- Valores altos vêm assim da planilha e não foram conferidos contra faturas reais (Black jun R$ 10.018,27 e set R$ 7.425,35). Não há fatura de ago/26 da Black na planilha.
+- Cinco linhas "Reajuste de fatura" (R$ 319,70 em dez, jan e fev; R$ 76,20 em dez e jan) não foram associadas a cartão habilitado e entraram só como pagamento na conta.
+- Reverter: restaurar o backup acima, ou apagar os lançamentos da importação #10, as 20 linhas novas de `faturas` (meses antigos) e devolver `saldo_inicial` (Itaú 0,00; Nubank 4.036,06).
+- A hora da release (14:33) é a do fechamento do código; o contêiner novo subiu às 14:36. Nada foi commitado.

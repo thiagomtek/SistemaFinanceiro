@@ -265,3 +265,11 @@ Pedido do Thiago em 29/10/2026. Não altera regras de cálculo; amplia a entrega
 - **RN-33** Cada aviso é enviado uma única vez por usuário (mesma chave do sino), às 8h, a todos os aparelhos dele. Usuário inativo não recebe.
 - **RN-34** O usuário pode enviar um teste e desativar qualquer aparelho dele; um aparelho é de quem entrou por último nele.
 - **RN-35** O Financeiro e o ERP não compartilham chaves, assinaturas, origem nem agendamento (ver DOCUMENTACAO_TECNICA).
+
+## 11. Histórico importado e média da projeção (v1.13.2)
+
+Autorizada pelo Thiago em 29/10/2026, depois de a simulação da carga do histórico (planilha do Mobills, dez/2025 a set/2026) mostrar a distorção da projeção.
+
+| Regra | Antes | Agora |
+|---|---|---|
+| **RN-32 Média da projeção e histórico importado** | A média dos 3 últimos meses completos somava todo lançamento avulso, inclusive os vindos de importação | Lançamentos de importações marcadas como histórico (`importacoes.tipo = 'historico'`) ficam fora da média (`sql_sem_historico`): o histórico não traz a marca de série (salário, faturas) e contaria em dobro o que a projeção já agenda. Continuam valendo em lançamentos, faturas, extrato e relatórios. |

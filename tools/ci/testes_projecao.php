@@ -99,5 +99,21 @@ igual($p5['serie'][1]['aporte'], 3000 + 500, 'aporte total = sobra + extra');
 igual($p5['serie'][1]['saldo'], 100 - 500, 'o extra sai da conta');
 ok($p5['serie'][0]['aporte'] >= 0, 'mês atual sem extra');
 
+echo "== RN-32: importacao marcada como historico fica fora da media; as demais continuam entrando\n";
+$mesPassado = date('Y-m-01', strtotime('first day of -1 month'));
+$impNormal = q_insert('INSERT INTO importacoes (perfil_id, arquivo, tipo) VALUES (?,?,?)', [perfil_id(), 'planilha.xlsx', 'planilha']);
+$impHist = q_insert('INSERT INTO importacoes (perfil_id, arquivo, tipo) VALUES (?,?,?)', [perfil_id(), 'historico.xlsx', 'historico']);
+$avulso = function (string $tipo, float $v, ?int $imp) use ($conta, $mesPassado): void {
+    q('INSERT INTO lancamentos (perfil_id, tipo, descricao, valor, data, efetivado, conta_id, importacao_id) VALUES (?,?,?,?,?,?,?,?)',
+        [perfil_id(), $tipo, 'Avulso', $v, $mesPassado, 1, $conta, $imp]);
+};
+$avulso('despesa', 3000, null);
+$avulso('despesa', 6000, $impHist);
+$avulso('receita', 9000, $impHist);
+$avulso('receita', 1500, $impNormal);
+$pm = projetar(3, true);
+igual($pm['media_despesas'], 3000 / 3, 'média de despesas: só os 3.000 avulsos (os 6.000 do histórico ficam de fora) ÷ 3 meses');
+igual($pm['media_receitas'], 1500 / 3, 'média de receitas: a importação comum entra, os 9.000 do histórico não');
+
 echo "\n" . ($falhas ? "$falhas FALHA(S)\n" : "TODOS OS TESTES PASSARAM\n");
 exit($falhas ? 1 : 0);

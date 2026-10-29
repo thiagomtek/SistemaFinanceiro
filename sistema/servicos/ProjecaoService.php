@@ -4,6 +4,16 @@ declare(strict_types=1);
 /* ProjecaoService: Projecao de saldo e patrimonio (fonte unica da regra de projecao). */
 
 /**
+ * Filtro SQL que deixa de fora lancamentos de importacoes marcadas como historico (importacoes.tipo = 'historico', RN-32).
+ * O historico importado nao traz a marca de serie (salario, faturas) e contaria em dobro, na media, o que a projecao ja agenda.
+ */
+function sql_sem_historico(string $alias = ''): string
+{
+    $c = $alias === '' ? 'importacao_id' : $alias . '.importacao_id';
+    return "($c IS NULL OR $c NOT IN (SELECT id FROM importacoes WHERE tipo = 'historico'))";
+}
+
+/**
  * Projecao mensal do saldo das contas e do patrimonio investido.
  * Fontes: lancamentos pendentes agendados (inclui parcelas/recorrencias), faturas de cartao em aberto
  * (no dia do vencimento) e, opcionalmente, media historica de gastos/receitas avulsos.
@@ -131,7 +141,7 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
         $m = q_one(
             "SELECT COALESCE(SUM(CASE WHEN tipo='despesa' THEN valor END),0) AS d, COALESCE(SUM(CASE WHEN tipo='receita' THEN valor END),0) AS r
              FROM lancamentos WHERE perfil_id = ? AND data >= ? AND data < ? AND grupo_id IS NULL AND parcela_num IS NULL
-               AND fatura_id IS NULL AND tipo IN ('receita','despesa') AND (efetivado = 1 OR cartao_id IS NOT NULL) AND " . sql_sem_restante(),
+               AND fatura_id IS NULL AND tipo IN ('receita','despesa') AND (efetivado = 1 OR cartao_id IS NOT NULL) AND " . sql_sem_restante() . ' AND ' . sql_sem_historico(),
             [$pid, $ini, $fim]
         );
         $media_desp = (float) $m['d'] / 3;

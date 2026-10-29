@@ -11,6 +11,16 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.13.2', 'build' => '20261029.4', 'data' => '29/10/2026', 'hora' => '14:33',
+                'titulo' => 'Histórico importado fora da média da projeção',
+                'destaque' => 'Importações marcadas como histórico (planilhas antigas) continuam em lançamentos, faturas e relatórios, mas não entram mais na média de gastos e receitas da Projeção.',
+                'categorias' => array(
+                    array('nome' => 'Correções', 'icone' => 'fa-wrench', 'cor' => '#d97706', 'itens' => array(
+                        array('titulo' => 'Média da projeção sem dupla contagem', 'descricao' => 'O histórico importado não traz a marca de série (salário, faturas) e fazia a média contar em dobro o que a projeção já agenda. Agora ele fica de fora da média.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.13.1', 'build' => '20261029.3', 'data' => '29/10/2026', 'hora' => '11:47',
                 'titulo' => 'Manter conectado no login',
                 'destaque' => 'A tela de entrada ganhou a opção "Manter conectado": a sessão não expira e dura para sempre no aparelho, até você clicar em Sair.',
