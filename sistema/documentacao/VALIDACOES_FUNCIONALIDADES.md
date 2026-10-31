@@ -417,3 +417,5 @@ Pendências / ressalvas:
 - Não publicada; tela não vista no navegador.
 - Dias até hoje sem CDI publicado usam o CDI atual, como o saldo exibido em Investimentos (não é projeção de data futura).
 - O Itaú CDB DI aparece negativo no mês (−R$ 216,75 bruto) por causa do reajuste de −R$ 256,38 de 29/10; é dado, não erro do cálculo.
+
+**Publicação da v1.13.4 (31/10/2026, ~16:25):** arquivos enviados, tag de reversão `sistema-financeiro-fin_app:rollback-1.13.3`, build do `fin_app`, `php -l` nos três arquivos na imagem nova, troca só do `fin_app` com `--no-deps` (`fin_db` seguiu healthy, 33 h no ar). Login responde 200 pelo Caddy. Sem alteração de banco. Tela com os KPIs não vista autenticada.
