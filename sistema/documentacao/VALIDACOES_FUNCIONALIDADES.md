@@ -388,3 +388,5 @@ Verificado: sintaxe e testes de domínio (ver execução abaixo).
 Pendências / ressalvas:
 - Não testado em navegador nem em produção; não publicado.
 - Resgates já gravados sem conta (e eventuais duplicados das tentativas anteriores) devem ser excluídos no histórico do investimento e refeitos escolhendo a conta.
+
+**Publicação (31/10/2026, ~16:17):** arquivos enviados à VM, tag de reversão `sistema-financeiro-fin_app:rollback-1.13.2`, `docker compose build fin_app`, `php -l` e conferência do texto na imagem nova, troca só do `fin_app` com `--no-deps` (`fin_db` seguiu no ar, healthy). Login responde 200 pelo Caddy. Sem alteração de banco. Tela de resgate não vista autenticada.
