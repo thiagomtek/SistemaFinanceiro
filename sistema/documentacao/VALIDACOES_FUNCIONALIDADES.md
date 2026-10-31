@@ -434,3 +434,5 @@ Verificado: sintaxe e 10 suítes em PHP 7.4; 12 asserções novas do painel (acu
 
 Pendências / ressalvas:
 - O visual (modal XL, grade dos gráficos, tooltip do botão) não foi visto em navegador real.
+
+**Publicação da v1.13.5 (31/10/2026, ~16:35):** arquivos enviados, tag de reversão `sistema-financeiro-fin_app:rollback-1.13.4`, build do `fin_app`, `php -l` nos quatro PHP na imagem nova, troca só do `fin_app` com `--no-deps` (`fin_db` seguiu healthy). Pelo Caddy: login 200, `api_investimento_painel.php` sem sessão 401, `inv_painel.js` 200. Sem alteração de banco. Tela autenticada não vista.
