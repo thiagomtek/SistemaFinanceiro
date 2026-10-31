@@ -11,6 +11,20 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.13.7', 'build' => '20261031.5', 'data' => '31/10/2026', 'hora' => '16:39',
+                'titulo' => 'Lotes e movimentações dentro do painel do investimento',
+                'destaque' => 'Os lotes, a projeção de 12 meses e o histórico de movimentações agora abrem no próprio painel do investimento, sem sair da lista.',
+                'categorias' => array(
+                    array('nome' => 'Novidades', 'icone' => 'fa-list', 'cor' => '#16a34a', 'itens' => array(
+                        array('titulo' => 'Duas visões no mesmo painel', 'descricao' => 'O botão "Lotes e movimentações" troca o resumo (KPIs e gráficos) pelos lotes com IR e IOF, pela projeção e pelas movimentações, e "Voltar ao resumo" volta.'),
+                        array('titulo' => 'Excluir e registrar sem sair', 'descricao' => 'Excluir uma movimentação ou registrar um rendimento reabre o painel do mesmo investimento na aba de movimentações.'),
+                    )),
+                    array('nome' => 'Melhorias', 'icone' => 'fa-wrench', 'cor' => '#d97706', 'itens' => array(
+                        array('titulo' => 'Tela mais limpa', 'descricao' => 'A seção de detalhe que aparecia abaixo da tabela de Investimentos foi removida; tudo está no painel.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.13.6', 'build' => '20261031.4', 'data' => '31/10/2026', 'hora' => '16:35',
                 'titulo' => 'Títulos dos indicadores sem corte',
                 'destaque' => 'Os títulos longos dos indicadores (KPIs) agora quebram em mais de uma linha em vez de terminar em reticências.',

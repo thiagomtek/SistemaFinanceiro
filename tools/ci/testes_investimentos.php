@@ -392,5 +392,23 @@ $pnVazio = investimento_painel(investimento_salvar(['nome' => 'Sem movimentos', 
 ok($pnVazio['vazio'] === true && !isset($pnVazio['serie']), 'investimento sem movimentos devolve painel vazio');
 lanca(function () { investimento_painel(999999); }, 'investimento de outro perfil ou inexistente é recusado');
 
+echo "== painel: lotes, projeção e movimentações (modal)\n";
+$totalMovs = (int) q_val('SELECT COUNT(*) FROM investimento_movs WHERE investimento_id = ?', [$p2]);
+ok(count($pn['movs']) === $totalMovs, 'a lista traz todas as movimentações, inclusive as agendadas para depois');
+ok($pn['movs'][0]['data'] >= end($pn['movs'])['data'], 'movimentações da mais nova para a mais antiga');
+$futuros = array_filter($pn['movs'], function ($m) { return $m['futuro']; });
+ok(count($futuros) === 2, 'as duas movimentações futuras vêm marcadas como agendadas');
+$resg = array_values(array_filter($pn['movs'], function ($m) { return $m['tipo'] === 'resgate'; }));
+ok(count($resg) === 1 && abs($resg[0]['valor'] - 200) < 0.005 && $resg[0]['ir'] > 0, 'resgate traz valor bruto, IR e IOF gravados');
+igual(array_sum(array_column($pn['lotes'], 'valor')), $pn['kpis']['saldo_bruto'], 'soma dos lotes = saldo bruto', 0.02);
+igual(array_sum(array_column($pn['lotes'], 'liquido')), $pn['kpis']['saldo_liquido'], 'soma do líquido dos lotes = saldo líquido', 0.02);
+ok(count($pn['projecao']) === 12 && $pn['projecao'][11]['bruto'] > $pn['projecao'][0]['bruto'] * 0.99, 'projeção de 12 meses para investimento ativo');
+ok($pn['cdi_anual'] !== null && $pn['regras'] !== '' && $pn['manual'] === false, 'CDI, regras de imposto e indicador de manual');
+ok(investimento_painel($p5)['manual'] === true, 'investimento manual permite registrar rendimento');
+q('UPDATE investimentos SET ativo = 0 WHERE id = ?', [$p5]);
+$pnIna = investimento_painel($p5);
+ok($pnIna['projecao'] === [] && $pnIna['cdi_anual'] === null && count($pnIna['movs']) === 3, 'inativo: sem projeção, mas com as movimentações');
+ok($pnVazio['movs'] === [] && $pnVazio['lotes'] === [], 'investimento vazio: listas vazias');
+
 echo "\n" . ($falhas ? "$falhas FALHA(S)\n" : "TODOS OS TESTES PASSARAM\n");
 exit($falhas ? 1 : 0);

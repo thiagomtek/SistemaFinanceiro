@@ -103,19 +103,47 @@ function investimento_painel(int $id): array
     $inv = rf_investimento($id);
     $hoje = date('Y-m-d');
     $r2 = function (float $v): float { return round($v, 2); };
-    $movs = array_values(array_filter(rf_movs($id), function ($m) use ($hoje) { return $m['data'] <= $hoje; }));
-    $base = ['nome' => $inv['nome'], 'rotulo' => inv_rotulo_indexador($inv), 'instituicao' => $inv['instituicao'], 'ativo' => (int) $inv['ativo'],
-        'tributacao' => $inv['tributacao'], 'primeira_data' => $movs ? $movs[0]['data'] : null, 'vazio' => !$movs];
-    if (!$movs) {
-        return $base;
-    }
+    $todos = rf_movs($id); // inclui os agendados para depois de hoje: aparecem na lista (e podem ser excluidos), mas nao entram nos numeros
+    $movs = array_values(array_filter($todos, function ($m) use ($hoje) { return $m['data'] <= $hoje; }));
     if ($inv['indexador'] === 'cdi') {
         indices_garantir();
+    }
+    $regras = $inv['tributacao'] === 'ir_regressivo' ? 'IR regressivo (22,5% até 180 dias, 20% até 360, 17,5% até 720, 15% acima) + IOF nos primeiros 30 dias'
+        : ($inv['tributacao'] === 'isento' ? 'isento de IR' : 'sem imposto calculado');
+    // projecao (unica parte que olha para frente, separada dos numeros realizados): 12 fins de mes, com os movimentos agendados
+    $proj = [];
+    if ($inv['ativo']) {
+        $datas = [];
+        for ($k = 1; $k <= 12; $k++) {
+            $datas[] = date('Y-m-t', strtotime("+$k month", strtotime(date('Y-m-01'))));
+        }
+        foreach (rf_serie($inv, $todos, $datas) as $d => $x) {
+            $proj[] = ['label' => mes_label(substr($d, 0, 7)), 'bruto' => $r2($x['bruto']), 'impostos' => $r2($x['ir'] + $x['iof']), 'liquido' => $r2($x['liquido'])];
+        }
+    }
+    $base = ['nome' => $inv['nome'], 'rotulo' => inv_rotulo_indexador($inv), 'instituicao' => $inv['instituicao'], 'ativo' => (int) $inv['ativo'],
+        'tributacao' => $inv['tributacao'], 'hoje' => $hoje, 'primeira_data' => $movs ? $movs[0]['data'] : null, 'vazio' => !$movs,
+        'manual' => $inv['indexador'] === 'manual', 'liquidez' => $inv['liquidez'], 'vencimento' => $inv['data_vencimento'], 'regras' => $regras,
+        'cdi_anual' => $proj ? indices_resumo()['cdi_anual'] : null, 'projecao' => $proj,
+        'movs' => array_map(function ($m) use ($hoje, $r2) {
+            return ['id' => (int) $m['id'], 'data' => $m['data'], 'tipo' => $m['tipo'], 'obs' => (string) $m['obs'], 'valor' => $r2((float) $m['valor']),
+                'ir' => $r2((float) $m['ir']), 'iof' => $r2((float) $m['iof']), 'ligado' => !empty($m['lancamento_id']), 'futuro' => $m['data'] > $hoje];
+        }, array_reverse($todos))];
+    if (!$movs) {
+        return $base + ['lotes' => []];
     }
     $cfg = ['fator' => rf_fator_fn($inv, $movs[0]['data'], add_dias($hoje, 2))];
     $s = rf_simular($inv, $movs, $hoje, $cfg);
     $liq = $s['liquidacao'];
     $impostos = $liq['ir'] + $liq['iof'];
+    $ehIr = $inv['tributacao'] === 'ir_regressivo';
+    $lotes = [];
+    foreach ($liq['lotes'] as $l) {
+        $iofL = $ehIr ? $l['ganho'] * $l['iof_pct'] / 100 : 0.0;
+        $irL = $ehIr ? ($l['ganho'] - $iofL) * $l['aliquota_ir'] / 100 : 0.0;
+        $lotes[] = ['data' => $l['data'], 'dias' => (int) $l['dias'], 'principal' => $r2($l['principal']), 'valor' => $r2($l['valor']), 'ganho' => $r2($l['ganho']),
+            'iof' => $r2($iofL), 'iof_pct' => $l['iof_pct'], 'ir' => $r2($irL), 'aliquota_ir' => $l['aliquota_ir'], 'liquido' => $r2($l['valor'] - $iofL - $irL)];
+    }
     $acum = rf_rendimento_periodo($inv, $movs, $movs[0]['data'], $hoje, $cfg);
     $mes = rf_rendimento_periodo($inv, $movs, substr($hoje, 0, 7) . '-01', $hoje, $cfg);
     $ano = rf_rendimento_periodo($inv, $movs, substr($hoje, 0, 4) . '-01-01', $hoje, $cfg);
@@ -164,6 +192,7 @@ function investimento_painel(int $id): array
         // composicao do saldo bruto: o que foi aplicado, o rendimento que fica depois de IR/IOF e o imposto estimado
         'composicao' => ['principal' => $r2($s['principal']), 'rendimento_liquido' => $r2($s['saldo_bruto'] - $s['principal'] - $impostos), 'impostos' => $r2($impostos)],
         'serie' => $serie,
+        'lotes' => $lotes,
     ];
 }
 

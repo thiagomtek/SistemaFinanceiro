@@ -444,3 +444,19 @@ Pendências / ressalvas:
 Arquivos: `sistema/assets/css/financeiro.css` (`.kpi .kpi-label`: `white-space: normal; overflow-wrap: anywhere; line-height: 1.25` no lugar de `nowrap` + reticências), `config_versao.php`, `config_novidades.php`. Alteração global: vale para todos os KPIs do sistema; o título longo passa a ocupar mais de uma linha e o card cresce na altura.
 
 Verificado: sintaxe PHP (ver execução abaixo). Pendências: não visto em navegador (desktop e celular); não publicado.
+
+## v1.13.7 — lotes, projeção e movimentações dentro do modal do investimento (build 20261031.5) — 31/10/2026, 16:39
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/investimentos.php` (removida a seção de detalhe abaixo da tabela, modal com duas visões, redirecionamentos `?abrir=ID[&aba=mov]`), `sistema/servicos/InvestimentoService.php` (`investimento_painel` passa a devolver `lotes`, `projecao`, `movs`, `regras`, `liquidez`, `manual`, `hoje`), `sistema/assets/js/inv_painel.js`, `sistema/lancamentos.php` (link do investimento no lançamento abre o painel na aba de movimentações), `tools/ci/testes_investimentos.php`, `config_versao.php`, `config_novidades.php`.
+
+Comportamento: o botão "Lotes e movimentações" do modal alterna com "Voltar ao resumo". A visão de movimentações traz os lotes com IR/IOF por lote, a projeção de 12 meses (a única parte que olha para frente, só para investimento ativo) e o histórico com exclusão (formulário com CSRF e confirmação) e, em investimento manual ativo, "Registrar rendimento". Depois de excluir movimento, registrar rendimento, aplicar, resgatar ou reajustar, a página recarrega e reabre o painel do mesmo investimento (movimentações nos dois primeiros casos); a URL é limpa em seguida. Movimentações agendadas aparecem na lista como "agendado" e não entram nos números.
+
+Revisão: além da revisão formal da v1.13.5, passada na diferença desta versão: o único ponto achado foi o link de `lancamentos.php` (`investimentos.php?id=`), que deixaria de abrir o detalhe; corrigido.
+
+Verificado: sintaxe e 10 suítes em PHP 7.4; 9 asserções novas (lista completa e ordenada, agendadas marcadas, resgate com IR/IOF gravados, soma dos lotes = saldos bruto e líquido, projeção de 12 meses, manual, inativo sem projeção, vazio). Com os 5 investimentos reais (só leitura): JSON do código novo e `inv_painel.js` num DOM simulado — 8 KPIs, 2–3 gráficos, linhas de lotes, projeção e movimentações iguais ao JSON, alternância entre as visões, formulário de exclusão com CSRF e confirmação, corrida de cliques, investimento vazio e falta do Chart.js.
+
+Pendências / ressalvas:
+- Não visto em navegador real (modal XL, tabelas largas no celular, empilhamento do modal "Registrar rendimento" sobre o painel, reabertura automática depois de uma ação).
+- O atalho "Cenários na tela de Projeção" da antiga seção de projeção não foi levado para o modal.

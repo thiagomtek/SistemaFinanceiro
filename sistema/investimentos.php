@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $contaId = (int) ($_POST['conta_id'] ?? 0);
             rf_aplicar($contaId, (int) ($_POST['investimento_id'] ?? 0), $_POST['valor'] ?? '', (string) ($_POST['data'] ?? ''), !empty($_POST['efetivada']), (string) ($_POST['obs'] ?? ''));
             flash($contaId ? 'Aplicação registrada e debitada da conta.' : 'Aplicação registrada (sem débito em conta).');
-            $destino = 'investimentos.php?id=' . (int) ($_POST['investimento_id'] ?? 0);
+            $destino = 'investimentos.php?abrir=' . (int) ($_POST['investimento_id'] ?? 0);
         } elseif ($acao === 'resgatar') {
             if (trim((string) ($_POST['conta_id'] ?? '')) === '') {
                 throw new InvalidArgumentException('Escolha a conta que recebe o resgate (ou "sem crédito em conta", que não gera lançamento).');
@@ -23,11 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $liquido = ($_POST['modo'] ?? 'valor') === 'total' ? null : ($_POST['valor'] ?? '');
             $r = rf_resgatar_liquido((int) ($_POST['investimento_id'] ?? 0), $contaId, $liquido, (string) ($_POST['data'] ?? ''), !empty($_POST['efetivada']), (string) ($_POST['obs'] ?? ''), $_POST['ir_manual'] ?? null, $_POST['iof_manual'] ?? null);
             flash('Resgate registrado: ' . brl($r['liquido']) . ($contaId ? ' creditado na conta' : ' (sem crédito em conta)') . '; debitado do investimento ' . brl($r['bruto']) . ' (IR ' . brl($r['ir']) . ', IOF ' . brl($r['iof']) . ($r['editado'] ? ', impostos informados por você' : '') . ').');
-            $destino = 'investimentos.php?id=' . (int) ($_POST['investimento_id'] ?? 0);
+            $destino = 'investimentos.php?abrir=' . (int) ($_POST['investimento_id'] ?? 0);
         } elseif ($acao === 'reajustar') {
             $r = rf_reajustar((int) ($_POST['investimento_id'] ?? 0), $_POST['saldo'] ?? '', (string) ($_POST['data'] ?? ''), (string) ($_POST['obs'] ?? ''), (string) ($_POST['base'] ?? 'bruto'));
             flash('Saldo bruto reajustado: de ' . brl($r['anterior']) . ' para ' . brl($r['novo']) . ' (diferença de ' . brl($r['diferenca']) . ').' . ($r['base'] === 'liquido' ? ' Calculado a partir do líquido informado.' : ''));
-            $destino = 'investimentos.php?id=' . (int) ($_POST['investimento_id'] ?? 0);
+            $destino = 'investimentos.php?abrir=' . (int) ($_POST['investimento_id'] ?? 0);
         } elseif ($acao === 'mov_manual') {
             // rendimento informado a mao (investimentos manuais, como acoes e FII)
             $invM = rf_investimento((int) ($_POST['investimento_id'] ?? 0), true);
@@ -38,13 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             q_insert('INSERT INTO investimento_movs (investimento_id, data, tipo, valor, obs) VALUES (?,?,?,?,?)', [$invM['id'], $data, 'rendimento', $valor, trim($_POST['obs'] ?? '') ?: null]);
             flash('Rendimento registrado.');
-            $destino = 'investimentos.php?id=' . (int) $invM['id'];
+            $destino = 'investimentos.php?abrir=' . (int) $invM['id'] . '&aba=mov';
         } elseif ($acao === 'excluir_mov') {
             $m = q_one('SELECT m.investimento_id FROM investimento_movs m JOIN investimentos i ON i.id = m.investimento_id WHERE m.id = ? AND i.perfil_id = ?', [(int) ($_POST['mov_id'] ?? 0), perfil_id()]);
             if ($m) {
                 rf_excluir_mov((int) $_POST['mov_id']);
                 flash('Movimento excluído (e a transferência ligada a ele, se houver).');
-                $destino = 'investimentos.php?id=' . $m['investimento_id'];
+                $destino = 'investimentos.php?abrir=' . (int) $m['investimento_id'] . '&aba=mov';
             }
         } elseif ($acao === 'alternar' && pertence_ao_perfil('investimentos', $id)) {
             q('UPDATE investimentos SET ativo = 1 - ativo WHERE id = ? AND perfil_id = ?', [$id, perfil_id()]);
@@ -80,22 +80,6 @@ foreach ($ativos as $i) {
 $idx = indices_resumo();
 $rendP = investimentos_rendimento_periodos();
 $contas = array_values(array_filter(contas_do_perfil(true), function ($c) { return $c['tipo'] !== 'investimento'; }));
-$detalheId = (int) ($_GET['id'] ?? 0);
-$detalhe = null;
-foreach ($invs as $i) {
-    if ((int) $i['id'] === $detalheId) {
-        $detalhe = $i;
-    }
-}
-$movs = $detalhe ? array_reverse(rf_movs((int) $detalhe['id'])) : [];
-$serieDet = [];
-if ($detalhe && $detalhe['ativo']) {
-    $datas = [];
-    for ($m = 1; $m <= 12; $m++) {
-        $datas[] = date('Y-m-t', strtotime("+$m month", strtotime(date('Y-m-01'))));
-    }
-    $serieDet = rf_serie($detalhe, rf_movs((int) $detalhe['id']), $datas);
-}
 $produtoDe = function (array $i): string {
     if ($i['indexador'] === 'poupanca') { return 'poupanca'; }
     if ($i['tipo'] === 'renda_fixa') { return $i['indexador'] === 'pre' ? 'tesouro' : ($i['tributacao'] === 'isento' ? 'lci' : 'cdb'); }
@@ -151,7 +135,7 @@ foreach ([[$invsAtivos, false], [$invsInativos, true]] as [$lista, $ina]):
   <tbody>
   <?php foreach ($lista as $i): $rend = $i['saldo'] - $i['principal']; ?>
     <tr style="<?= $i['ativo'] ? '' : 'opacity:.55' ?>">
-      <td><a href="investimentos.php?id=<?= (int) $i['id'] ?>" data-modal="modal-painel" data-painel="<?= (int) $i['id'] ?>" data-nome="<?= e($i['nome']) ?>" title="Ver KPIs e gráficos"><strong><?= e($i['nome']) ?></strong></a><?= $i['instituicao'] ? '<br><small class="text-muted">' . e($i['instituicao']) . '</small>' : '' ?>
+      <td><a href="investimentos.php?abrir=<?= (int) $i['id'] ?>" data-modal="modal-painel" data-painel="<?= (int) $i['id'] ?>" data-nome="<?= e($i['nome']) ?>" title="Ver KPIs e gráficos"><strong><?= e($i['nome']) ?></strong></a><?= $i['instituicao'] ? '<br><small class="text-muted">' . e($i['instituicao']) . '</small>' : '' ?>
         <?php if ($i['tributacao'] === 'isento'): ?> <span class="erp-badge erp-badge-success" title="Sem imposto de renda">isento</span><?php endif; ?></td>
       <td><?= e($i['rotulo']) ?><?= $i['liquidez'] === 'vencimento' && $i['data_vencimento'] ? '<br><small class="text-muted">vence ' . e(data_br($i['data_vencimento'])) . '</small>' : '' ?></td>
       <td class="num"><?= brl($i['principal']) ?></td>
@@ -160,7 +144,7 @@ foreach ([[$invsAtivos, false], [$invsInativos, true]] as [$lista, $ina]):
       <td class="num"><?= brl($i['ir'] + $i['iof']) ?></td>
       <td class="num"><strong><?= brl($i['liquido']) ?></strong></td>
       <td class="acoes">
-        <a href="investimentos.php?id=<?= (int) $i['id'] ?>" class="cli-btn-acao btn-acao-ver" title="KPIs e gráficos" data-modal="modal-painel" data-painel="<?= (int) $i['id'] ?>" data-nome="<?= e($i['nome']) ?>"><i class="fa fa-pie-chart"></i></a>
+        <a href="investimentos.php?abrir=<?= (int) $i['id'] ?>" class="cli-btn-acao btn-acao-ver" title="KPIs e gráficos" data-modal="modal-painel" data-painel="<?= (int) $i['id'] ?>" data-nome="<?= e($i['nome']) ?>"><i class="fa fa-pie-chart"></i></a>
         <?php if ($i['ativo']): ?>
           <a href="#" class="erp-btn-acao btn-acao-sucesso" title="Aplicar (conta → investimento)" data-modal="modal-aplicar" data-preencher="<?= e(json_encode(['investimento_id' => $i['id'], 'data' => date('Y-m-d'), 'efetivada' => 1])) ?>"><i class="fa fa-arrow-circle-right"></i></a>
           <a href="#" class="cli-btn-acao btn-acao-ver" title="Resgatar (investimento → conta)" data-modal="modal-resgatar" data-preencher="<?= e(json_encode(['investimento_id' => $i['id'], 'data' => date('Y-m-d'), 'efetivada' => 1, 'modo' => 'total'])) ?>"><i class="fa fa-arrow-circle-left"></i></a>
@@ -182,66 +166,6 @@ foreach ([[$invsAtivos, false], [$invsInativos, true]] as [$lista, $ina]):
 <?php if ($ina): ?></details><?php endif;
 endforeach; ?>
 
-<?php if ($detalhe): ?>
-<div class="card card-outline card-info" id="detalhe">
-  <div class="card-header"><h3 class="card-title"><i class="fa fa-search text-info"></i> <?= e($detalhe['nome']) ?> — lotes e movimentações</h3>
-    <div class="card-tools"><a href="investimentos.php" class="btn btn-outline-secondary btn-sm">Fechar</a></div></div>
-  <div class="card-body p-0">
-    <div style="padding:14px 20px;font-size:13px;color:#475569">
-      <strong><?= e($detalhe['rotulo']) ?></strong> · <?= $detalhe['tributacao'] === 'ir_regressivo' ? 'IR regressivo (22,5% até 180 dias, 20% até 360, 17,5% até 720, 15% acima) + IOF nos primeiros 30 dias' : ($detalhe['tributacao'] === 'isento' ? 'isento de IR' : 'sem imposto calculado') ?>
-      · liquidez <?= $detalhe['liquidez'] === 'vencimento' ? 'no vencimento' : 'diária' ?>.
-      Cada aplicação é um lote com a própria data; resgates consomem o lote mais antigo primeiro.
-    </div>
-    <?php if ($detalhe['lotes']): ?>
-    <div class="table-responsive"><table class="table table-striped table-hover m-0">
-      <thead><tr><th>Aplicado em</th><th class="num">Dias</th><th class="num">Principal</th><th class="num">Valor bruto</th><th class="num">Ganho</th><th class="num">IOF</th><th class="num">IR</th><th class="num">Líquido</th></tr></thead>
-      <tbody>
-      <?php foreach ($detalhe['lotes'] as $l):
-          $iofL = $detalhe['tributacao'] === 'ir_regressivo' ? $l['ganho'] * $l['iof_pct'] / 100 : 0;
-          $irL = $detalhe['tributacao'] === 'ir_regressivo' ? ($l['ganho'] - $iofL) * $l['aliquota_ir'] / 100 : 0; ?>
-        <tr><td><?= e(data_br($l['data'])) ?></td><td class="num"><?= (int) $l['dias'] ?></td><td class="num"><?= brl($l['principal']) ?></td><td class="num"><strong><?= brl($l['valor']) ?></strong></td>
-          <td class="num text-success"><?= brl($l['ganho']) ?></td><td class="num"><?= brl($iofL) ?><?= $l['iof_pct'] > 0 ? ' <small class="text-muted">(' . number_format($l['iof_pct'], 0) . '%)</small>' : '' ?></td>
-          <td class="num"><?= brl($irL) ?><?= $l['aliquota_ir'] > 0 ? ' <small class="text-muted">(' . number_format($l['aliquota_ir'], 1, ',', '.') . '%)</small>' : '' ?></td><td class="num"><strong><?= brl($l['valor'] - $iofL - $irL) ?></strong></td></tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table></div>
-    <?php endif; ?>
-  </div>
-</div>
-
-<?php if ($serieDet): ?>
-<div class="card card-outline card-success">
-  <div class="card-header"><h3 class="card-title"><i class="fa fa-line-chart text-success"></i> Projeção dos próximos 12 meses <small class="text-muted" style="font-weight:400">(CDI de hoje: <?= number_format($idx['cdi_anual'], 2, ',', '.') ?>% a.a., incluindo aplicações já agendadas)</small></h3>
-    <div class="card-tools"><a href="projecao.php" class="btn btn-outline-secondary btn-sm">Cenários na tela de Projeção</a></div></div>
-  <div class="card-body p-0"><div class="table-responsive"><table class="table table-striped table-hover m-0">
-    <thead><tr><th>Fim de</th><th class="num">Saldo bruto</th><th class="num">IR + IOF se resgatar</th><th class="num">Saldo líquido</th></tr></thead>
-    <tbody><?php foreach ($serieDet as $d => $x): ?>
-      <tr><td><?= e(mes_label(substr($d, 0, 7))) ?></td><td class="num"><?= brl($x['bruto']) ?></td><td class="num"><?= brl($x['ir'] + $x['iof']) ?></td><td class="num"><strong><?= brl($x['liquido']) ?></strong></td></tr>
-    <?php endforeach; ?></tbody></table></div></div>
-</div>
-<?php endif; ?>
-
-<div class="card card-outline card-secondary">
-  <div class="card-header"><h3 class="card-title"><i class="fa fa-history text-secondary"></i> Movimentações</h3>
-    <?php if ($detalhe['indexador'] === 'manual'): ?><div class="card-tools"><a href="#" class="btn btn-outline-primary btn-sm" data-modal="modal-manual" data-preencher="<?= e(json_encode(['investimento_id' => $detalhe['id'], 'data' => date('Y-m-d')])) ?>"><i class="fa fa-plus"></i> Registrar rendimento</a></div><?php endif; ?></div>
-  <div class="card-body p-0">
-  <?php if (!$movs): ?><div class="erp-empty-state"><div class="erp-empty-state-icon"><i class="fa fa-inbox"></i></div><div class="erp-empty-state-title">Sem movimentações</div></div><?php else: ?>
-  <div class="table-responsive"><table class="table table-striped table-hover m-0">
-    <thead><tr><th>Data</th><th>Tipo</th><th>Observação</th><th class="num">Valor bruto</th><th class="num">IR</th><th class="num">IOF</th><th class="num">Líquido</th><th class="text-center">Ações</th></tr></thead>
-    <tbody>
-    <?php foreach ($movs as $m): $rot = ['aporte' => 'Aplicação', 'resgate' => 'Resgate', 'rendimento' => 'Rendimento', 'reajuste' => 'Reajuste'][$m['tipo']]; ?>
-      <tr><td><?= e(data_br($m['data'])) ?></td>
-        <td><span class="erp-badge erp-badge-<?= $m['tipo'] === 'aporte' ? 'info' : ($m['tipo'] === 'resgate' ? 'warning' : 'success') ?>"><?= e($rot) ?></span><?= $m['lancamento_id'] ? ' <i class="fa fa-exchange text-muted" title="Ligado a uma transferência de conta"></i>' : '' ?></td>
-        <td><?= e($m['obs']) ?></td>
-        <td class="num <?= $m['tipo'] === 'resgate' ? 'text-danger' : ($m['valor'] < 0 ? 'text-danger' : 'text-success') ?>"><?= $m['tipo'] === 'resgate' ? '−' : ($m['valor'] < 0 ? '−' : '+') ?> <?= brl(abs($m['valor'])) ?></td>
-        <td class="num"><?= $m['tipo'] === 'resgate' ? brl($m['ir']) : '' ?></td><td class="num"><?= $m['tipo'] === 'resgate' ? brl($m['iof']) : '' ?></td>
-        <td class="num"><?= $m['tipo'] === 'resgate' ? '<strong>' . brl($m['valor'] - $m['ir'] - $m['iof']) . '</strong>' : '' ?></td>
-        <td class="acoes"><form method="post" data-confirmar="Excluir esta movimentação<?= $m['lancamento_id'] ? ' e a transferência de conta ligada a ela' : '' ?>?"><?= csrf_field() ?><input type="hidden" name="acao" value="excluir_mov"><input type="hidden" name="mov_id" value="<?= (int) $m['id'] ?>"><button class="cli-btn-acao btn-acao-excluir"><i class="fa fa-trash"></i></button></form></td></tr>
-    <?php endforeach; ?></tbody></table></div><?php endif; ?>
-  </div>
-</div>
-<?php endif; ?>
-
 <div class="modal fin-modal erp-modal-xl" id="modal-painel">
   <div class="modal-dialog">
     <div class="modal-header"><h4 class="modal-title"><i class="fa fa-pie-chart"></i> <span id="pn-titulo">Investimento</span> <small class="text-muted" id="pn-sub" style="font-weight:400"></small></h4><button type="button" class="close" data-fechar>&times;</button></div>
@@ -258,8 +182,24 @@ endforeach; ?>
         </div>
         <p class="text-muted" id="pn-nota" style="font-size:12px;margin:12px 0 0"></p>
       </div>
+      <div id="pn-mov" class="hidden">
+        <p class="text-muted" id="pn-regras" style="font-size:13px;margin:0 0 12px"></p>
+        <div class="painel" style="margin:0 0 16px" id="pn-lotes-box"><h4><i class="fa fa-cubes text-info"></i> Lotes (cada aplicação tem a própria data; resgates consomem o mais antigo primeiro)</h4>
+          <div class="table-responsive"><table class="table table-striped table-hover m-0">
+            <thead><tr><th>Aplicado em</th><th class="num">Dias</th><th class="num">Principal</th><th class="num">Valor bruto</th><th class="num">Ganho</th><th class="num">IOF</th><th class="num">IR</th><th class="num">Líquido</th></tr></thead>
+            <tbody id="pn-lotes"></tbody></table></div></div>
+        <div class="painel" style="margin:0 0 16px" id="pn-proj-box"><h4><i class="fa fa-line-chart text-success"></i> Projeção dos próximos 12 meses <small class="text-muted" id="pn-proj-info" style="font-weight:400"></small></h4>
+          <div class="table-responsive"><table class="table table-striped table-hover m-0">
+            <thead><tr><th>Fim de</th><th class="num">Saldo bruto</th><th class="num">IR + IOF se resgatar</th><th class="num">Saldo líquido</th></tr></thead>
+            <tbody id="pn-proj"></tbody></table></div></div>
+        <div class="painel" style="margin:0"><h4><i class="fa fa-history text-secondary"></i> Movimentações <a href="#" id="pn-manual" class="btn btn-outline-primary btn-sm hidden" data-modal="modal-manual" style="margin-left:auto"><i class="fa fa-plus"></i> Registrar rendimento</a></h4>
+          <div class="table-responsive"><table class="table table-striped table-hover m-0">
+            <thead><tr><th>Data</th><th>Tipo</th><th>Observação</th><th class="num">Valor bruto</th><th class="num">IR</th><th class="num">IOF</th><th class="num">Líquido</th><th class="text-center">Ações</th></tr></thead>
+            <tbody id="pn-movs"></tbody></table></div>
+          <div class="text-muted hidden" id="pn-movs-vazio" style="padding:18px 20px">Sem movimentações.</div></div>
+      </div>
     </div>
-    <div class="modal-footer"><a href="#" id="pn-detalhe" class="btn btn-outline-primary"><i class="fa fa-list"></i> Lotes e movimentações</a><button type="button" class="btn btn-secondary" data-fechar>Fechar</button></div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-primary hidden" id="pn-alterna"><i class="fa fa-list"></i> <span>Lotes e movimentações</span></button><button type="button" class="btn btn-secondary" data-fechar>Fechar</button></div>
   </div>
 </div>
 
