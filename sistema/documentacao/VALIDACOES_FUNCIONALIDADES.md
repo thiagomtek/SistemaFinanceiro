@@ -460,3 +460,5 @@ Verificado: sintaxe e 10 suítes em PHP 7.4; 9 asserções novas (lista completa
 Pendências / ressalvas:
 - Não visto em navegador real (modal XL, tabelas largas no celular, empilhamento do modal "Registrar rendimento" sobre o painel, reabertura automática depois de uma ação).
 - O atalho "Cenários na tela de Projeção" da antiga seção de projeção não foi levado para o modal.
+
+**Publicação das v1.13.6 e v1.13.7 (31/10/2026, ~16:45):** a VM estava na 1.13.5; foram enviados juntos o CSS dos títulos de KPI (v1.13.6) e os arquivos desta versão. Tag de reversão `sistema-financeiro-fin_app:rollback-1.13.5`, build do `fin_app`, `php -l` nos três PHP alterados, troca só do `fin_app` com `--no-deps` (`fin_db` seguiu healthy). Pelo Caddy: login 200, `api_investimento_painel.php` sem sessão 401, `inv_painel.js` 200. Sem alteração de banco. Tela autenticada não vista.
