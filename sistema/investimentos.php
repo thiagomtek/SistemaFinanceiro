@@ -16,7 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash($contaId ? 'Aplicação registrada e debitada da conta.' : 'Aplicação registrada (sem débito em conta).');
             $destino = 'investimentos.php?id=' . (int) ($_POST['investimento_id'] ?? 0);
         } elseif ($acao === 'resgatar') {
-            $contaId = (int) ($_POST['conta_id'] ?? 0);
+            if (trim((string) ($_POST['conta_id'] ?? '')) === '') {
+                throw new InvalidArgumentException('Escolha a conta que recebe o resgate (ou "sem crédito em conta", que não gera lançamento).');
+            }
+            $contaId = (int) $_POST['conta_id'];
             $liquido = ($_POST['modo'] ?? 'valor') === 'total' ? null : ($_POST['valor'] ?? '');
             $r = rf_resgatar_liquido((int) ($_POST['investimento_id'] ?? 0), $contaId, $liquido, (string) ($_POST['data'] ?? ''), !empty($_POST['efetivada']), (string) ($_POST['obs'] ?? ''), $_POST['ir_manual'] ?? null, $_POST['iof_manual'] ?? null);
             flash('Resgate registrado: ' . brl($r['liquido']) . ($contaId ? ' creditado na conta' : ' (sem crédito em conta)') . '; debitado do investimento ' . brl($r['bruto']) . ' (IR ' . brl($r['ir']) . ', IOF ' . brl($r['iof']) . ($r['editado'] ? ', impostos informados por você' : '') . ').');
@@ -273,7 +276,7 @@ endforeach; ?>
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group"><label>Investimento</label><select class="form-control" name="investimento_id" required><option value="">Selecione…</option><?= opcoes(array_values($ativos)) ?></select></div>
-        <div class="form-group"><label>Conta de destino</label><select class="form-control" name="conta_id"><option value="0">— sem crédito em conta —</option><?= opcoes($contas) ?></select></div>
+        <div class="form-group"><label>Conta de destino</label><select class="form-control" name="conta_id" required><option value="">Selecione a conta…</option><?= opcoes($contas) ?><option value="0">— sem crédito em conta (não gera lançamento) —</option></select></div>
         <div class="form-group"><label>Quanto resgatar</label><select class="form-control" name="modo"><option value="total">Tudo (resgate total)</option><option value="valor">Um valor (líquido na conta)</option></select></div>
         <div class="form-group" id="rs-valor"><label>Valor líquido na conta</label><div class="fin-field-prefix"><span class="fin-prefix">R$</span><input class="form-control" name="valor" inputmode="decimal" placeholder="0,00"></div></div>
         <div class="form-group"><label>Data do resgate</label><input class="form-control" type="date" name="data" required></div>

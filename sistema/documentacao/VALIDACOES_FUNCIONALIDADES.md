@@ -372,3 +372,19 @@ Pendências / ressalvas:
 - As parcelas existentes foram replicadas como estão; se o financiamento for quitado antes ou tiver correção, as futuras precisam ser ajustadas ou excluídas ("todas", no grupo).
 - Reverter: apagar os lançamentos com `importacao_id = 11` e a linha 11 de `importacoes` (ou restaurar o backup acima).
 - Nada commitado ainda (`tools/carga/completar_parcelas.php` e esta entrada).
+
+## v1.13.3 — conta de destino obrigatória no resgate de investimento (build 20261031.1) — 31/10/2026, 15:56
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/investimentos.php`, `sistema/config_versao.php`, `sistema/config_novidades.php`.
+
+Problema: no modal "Resgatar", a conta de destino vinha pré-marcada como "— sem crédito em conta —". Sem escolher a conta, o resgate era gravado só no investimento (obs. "Resgate sem crédito em conta") e não aparecia em Lançamentos.
+
+Mudança: o campo passou a ser obrigatório, começa em "Selecione a conta…" e "sem crédito em conta" ficou como última opção, explícita. O servidor também recusa o POST sem `conta_id`. Regras de `RendaFixaService` e a importação de extrato não mudaram.
+
+Verificado: sintaxe e testes de domínio (ver execução abaixo).
+
+Pendências / ressalvas:
+- Não testado em navegador nem em produção; não publicado.
+- Resgates já gravados sem conta (e eventuais duplicados das tentativas anteriores) devem ser excluídos no histórico do investimento e refeitos escolhendo a conta.

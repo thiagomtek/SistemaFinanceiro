@@ -11,6 +11,16 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.13.3', 'build' => '20261031.1', 'data' => '31/10/2026', 'hora' => '15:56',
+                'titulo' => 'Resgate com a conta de destino obrigatória',
+                'destaque' => 'No resgate de investimento você agora precisa escolher a conta que recebe o valor, para o resgate sempre aparecer nos lançamentos.',
+                'categorias' => array(
+                    array('nome' => 'Correções', 'icone' => 'fa-wrench', 'cor' => '#d97706', 'itens' => array(
+                        array('titulo' => 'Resgate que não aparecia nos lançamentos', 'descricao' => 'A conta de destino vinha como "sem crédito em conta" e o resgate ficava só no investimento. Agora o campo começa vazio e é obrigatório; "sem crédito em conta" continua disponível, mas como escolha explícita.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.13.2', 'build' => '20261029.4', 'data' => '29/10/2026', 'hora' => '14:33',
                 'titulo' => 'Histórico importado fora da média da projeção',
                 'destaque' => 'Importações marcadas como histórico (planilhas antigas) continuam em lançamentos, faturas e relatórios, mas não entram mais na média de gastos e receitas da Projeção.',
