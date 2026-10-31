@@ -390,3 +390,15 @@ Pendências / ressalvas:
 - Resgates já gravados sem conta (e eventuais duplicados das tentativas anteriores) devem ser excluídos no histórico do investimento e refeitos escolhendo a conta.
 
 **Publicação (31/10/2026, ~16:17):** arquivos enviados à VM, tag de reversão `sistema-financeiro-fin_app:rollback-1.13.2`, `docker compose build fin_app`, `php -l` e conferência do texto na imagem nova, troca só do `fin_app` com `--no-deps` (`fin_db` seguiu no ar, healthy). Login responde 200 pelo Caddy. Sem alteração de banco. Tela de resgate não vista autenticada.
+
+## Correção de dados: resgate do Itaú CDB DI refeito (31/10/2026) — carga de dados, sem alterar o código do app
+
+**Status: validada com ressalvas.** Arquivo: `tools/carga/refazer_resgate.php` (novo).
+
+Situação encontrada em produção: dois resgates idênticos de R$ 244,44 em 31/10 no investimento "Itaú CDB DI" (movimentos 221 e 222), gravados sem conta (sem lançamento) e com IR e IOF zerados. Foram removidos e refeitos como **um** resgate pelo valor líquido, na conta Itaú, pelo motor de renda fixa (`rf_resgatar_liquido`): lançamento 1011 (transferência, efetivada), bruto R$ 244,44, IR R$ 0,00, IOF R$ 0,00.
+
+Por que IR/IOF zero: o investimento tem um único lote de R$ 9.502,00 (26/10) e, após o reajuste de −R$ 256,38 (29/10), o saldo bruto é R$ 9.269,51, abaixo do principal; sem ganho, não há IR nem IOF. Se o Itaú cobrou imposto, os campos IR/IOF do modal de resgate são editáveis.
+
+Backup: `backups/financeiro_antes_resgate_itau_20261031_160000.sql`. Reverter: restaurar o backup (ou apagar o lançamento 1011 e seu movimento e recriar os movimentos 221 e 222). Ensaio feito antes (sem gravar) e execução pelo `fin_app`; script apagado do contêiner.
+
+Pendências: tela não vista autenticada; o saldo do investimento depende do reajuste de 29/10 estar correto.
