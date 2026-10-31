@@ -402,3 +402,18 @@ Por que IR/IOF zero: o investimento tem um único lote de R$ 9.502,00 (26/10) e,
 Backup: `backups/financeiro_antes_resgate_itau_20261031_160000.sql`. Reverter: restaurar o backup (ou apagar o lançamento 1011 e seu movimento e recriar os movimentos 221 e 222). Ensaio feito antes (sem gravar) e execução pelo `fin_app`; script apagado do contêiner.
 
 Pendências: tela não vista autenticada; o saldo do investimento depende do reajuste de 29/10 estar correto.
+
+## v1.13.4 — KPIs de rendimento bruto e líquido, mensal e anual, em Investimentos (build 20261031.2) — 31/10/2026, 16:19
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/servicos/RendaFixaService.php` (`rf_rendimento_periodo`), `sistema/servicos/InvestimentoService.php` (`investimentos_rendimento_periodos`), `sistema/investimentos.php` (4 KPIs), `tools/ci/testes_investimentos.php`, `sistema/documentacao/REQUISITOS_E_REGRAS_DE_NEGOCIO.md` (RN-36 a RN-38), `config_versao.php`, `config_novidades.php`.
+
+Fórmula (fonte única no motor): bruto = saldo bruto em hoje − saldo bruto na véspera do início − aportes + resgates brutos; líquido = saldo líquido (IR/IOF de resgatar tudo na data) hoje − o da véspera − aportes + resgates realmente pagos (valor − IR − IOF gravados). Mês = dia 1 até hoje; ano = 1º/jan até hoje; soma de todos os investimentos, inclusive inativos; movimentos depois de hoje ignorados.
+
+Verificado: 21 asserções novas contra oráculos calculados à mão (pré-fixado 12%): bruto do mês, aporte e resgate no meio do período fora do rendimento, líquido com IR 22,5% e IOF de 30% no lote de 21 dias, IR corrigido no resgate reduz o líquido em exatamente R$ 1,00, movimentos futuros não mudam nada, investimento que começou no mês, LCI isenta, manual com reajuste negativo, soma da carteira com inativo. Sintaxe e suítes de teste em PHP 7.4. Com os dados reais de produção (somente leitura, nada gravado): mês R$ 781,59 bruto / R$ 550,51 líquido; ano R$ 3.287,03 / R$ 2.483,17.
+
+Pendências / ressalvas:
+- Não publicada; tela não vista no navegador.
+- Dias até hoje sem CDI publicado usam o CDI atual, como o saldo exibido em Investimentos (não é projeção de data futura).
+- O Itaú CDB DI aparece negativo no mês (−R$ 216,75 bruto) por causa do reajuste de −R$ 256,38 de 29/10; é dado, não erro do cálculo.

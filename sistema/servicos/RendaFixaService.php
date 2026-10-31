@@ -244,6 +244,47 @@ function rf_serie(array $inv, array $movs, array $datas, ?float $cdiProj = null)
     return $out;
 }
 
+/**
+ * Rendimento REALIZADO de um investimento no periodo [$de, $ate] (datas inclusivas; $ate nunca depois de hoje: nada e projetado).
+ * Aportes e resgates nao sao rendimento: so o que o saldo ganhou alem do dinheiro que entrou e saiu.
+ * - bruto   = saldo bruto em $ate - saldo bruto na vespera de $de - aportes + resgates brutos do periodo;
+ * - liquido = saldo liquido em $ate (IR/IOF que seriam retidos se resgatasse tudo na data) - o mesmo na vespera - aportes
+ *             + o que os resgates do periodo realmente pagaram (valor - IR - IOF gravados no movimento, que o usuario pode ter corrigido).
+ * Reajustes e rendimentos informados a mao entram no saldo e, portanto, no rendimento.
+ * @return array{bruto: float, liquido: float, aportes: float, resgates: float}
+ */
+function rf_rendimento_periodo(array $inv, array $movs, string $de, string $ate, array $cfg = []): array
+{
+    $zero = ['bruto' => 0.0, 'liquido' => 0.0, 'aportes' => 0.0, 'resgates' => 0.0];
+    if (!$movs || $ate < $de) {
+        return $zero;
+    }
+    $antes = add_dias($de, -1);
+    if (!isset($cfg['fator'])) {
+        $cfg['fator'] = rf_fator_fn($inv, min($movs[0]['data'], $antes), add_dias($ate, 2), $cfg['cdi_proj'] ?? null);
+    }
+    $ini = rf_simular($inv, $movs, $antes, $cfg);
+    $fim = rf_simular($inv, $movs, $ate, $cfg);
+    $aportes = $resgBruto = $resgLiquido = 0.0;
+    foreach ($movs as $m) {
+        if ($m['data'] < $de || $m['data'] > $ate) {
+            continue;
+        }
+        if ($m['tipo'] === 'aporte') {
+            $aportes += (float) $m['valor'];
+        } elseif ($m['tipo'] === 'resgate') {
+            $resgBruto += (float) $m['valor'];
+            $resgLiquido += (float) $m['valor'] - (float) $m['ir'] - (float) $m['iof'];
+        }
+    }
+    return [
+        'bruto' => $fim['saldo_bruto'] - $ini['saldo_bruto'] - $aportes + $resgBruto,
+        'liquido' => $fim['liquidacao']['liquido'] - $ini['liquidacao']['liquido'] - $aportes + $resgLiquido,
+        'aportes' => $aportes,
+        'resgates' => $resgBruto,
+    ];
+}
+
 /** Taxa efetiva anual aproximada (% a.a.) do investimento, para projetar aportes futuros sem movimento detalhado. */
 function rf_taxa_anual_efetiva(array $inv, ?float $cdiProj = null): float
 {

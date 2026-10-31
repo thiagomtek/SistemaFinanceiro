@@ -7,14 +7,14 @@
  */
 
 if (!defined('SISTEMA_VERSAO')) {
-    define('SISTEMA_VERSAO', '1.13.3');
+    define('SISTEMA_VERSAO', '1.13.4');
 }
 if (!defined('SISTEMA_BUILD')) {
-    define('SISTEMA_BUILD', '20261031.1');
+    define('SISTEMA_BUILD', '20261031.2');
 }
 if (!defined('SISTEMA_RELEASE_DATA')) {
     define('SISTEMA_RELEASE_DATA', '31/10/2026');
 }
 if (!defined('SISTEMA_RELEASE_HORA')) {
-    define('SISTEMA_RELEASE_HORA', '15:56');
+    define('SISTEMA_RELEASE_HORA', '16:19');
 }

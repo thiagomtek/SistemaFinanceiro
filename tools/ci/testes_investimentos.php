@@ -292,5 +292,86 @@ ok($sd[$futuro]['bruto'] > $sd[$hojeD]['bruto'], 'saldo futuro maior (CDI)');
 ok($sd[$futuro]['liquido'] <= $sd[$futuro]['bruto'], 'líquido nunca maior que o bruto');
 ok(saldo_investimentos_por_dia([]) === [], 'sem datas, sem resultado');
 
+echo "== rendimento do periodo (mes/ano): bruto e liquido, sem projecao\n";
+$G = function (string $a, string $b): float { return pow(1.12, dias_uteis($a, $b) / 252); }; // pre-fixado 12% a.a.
+$movInv = function (int $id, string $d, string $t, float $v): void {
+    q_insert('INSERT INTO investimento_movs (investimento_id, data, tipo, valor) VALUES (?,?,?,?)', [$id, $d, $t, $v]);
+};
+$de = '2026-03-01';
+$ate = '2026-03-31';
+$p1 = investimento_salvar(['nome' => 'Per Pré 12', 'produto' => 'tesouro', 'indexador' => 'pre', 'taxa_anual' => '12']);
+$movInv($p1, '2026-01-05', 'aporte', 1000);
+$inv1 = q_one('SELECT * FROM investimentos WHERE id = ?', [$p1]);
+$r = rf_rendimento_periodo($inv1, rf_movs($p1), $de, $ate);
+$esperado = 1000 * ($G('2026-01-05', $ate) - $G('2026-01-05', '2026-02-28'));
+igual($r['bruto'], $esperado, 'bruto do mês = saldo final - saldo da véspera (sem aportes nem resgates)');
+igual($r['liquido'], $esperado * 0.775, 'líquido = bruto menos 22,5% de IR (lote de 54 a 85 dias, sem IOF)');
+ok($r['liquido'] < $r['bruto'], 'líquido menor que o bruto com IR');
+
+// aporte e resgate no meio do periodo nao sao rendimento
+$p2 = investimento_salvar(['nome' => 'Per Pré fluxo', 'produto' => 'tesouro', 'indexador' => 'pre', 'taxa_anual' => '12']);
+$movInv($p2, '2026-01-05', 'aporte', 1000);
+$movInv($p2, '2026-03-10', 'aporte', 500);
+$inv2 = q_one('SELECT * FROM investimentos WHERE id = ?', [$p2]);
+rf_resgatar($p2, 0, 200, '2026-03-20');
+$r2 = rf_rendimento_periodo($inv2, rf_movs($p2), $de, $ate);
+$saldoFim = (1000 * $G('2026-01-05', '2026-03-20') - 200) * $G('2026-03-20', $ate) + 500 * $G('2026-03-10', $ate);
+$esperado2 = $saldoFim - 1000 * $G('2026-01-05', '2026-02-28') - 500 + 200;
+igual($r2['bruto'], $esperado2, 'aporte de 500 e resgate de 200 no mês não entram no rendimento bruto');
+$g2 = 500 * ($G('2026-03-10', $ate) - 1); // ganho do lote novo (21 dias): IOF de 30% e depois IR de 22,5%
+igual($r2['liquido'], ($r2['bruto'] - $g2) * 0.775 + $g2 * 0.70 * 0.775, 'líquido com resgate: 77,5% do ganho do lote antigo (IR pago no resgate e estimado) + lote de 21 dias com IOF de 30% e IR');
+igual($r2['aportes'], 500, 'aportes do período informados');
+igual($r2['resgates'], 200, 'resgates brutos do período informados');
+// o IR/IOF gravado no resgate (corrigido pelo usuario) e o que vale como imposto pago
+q('UPDATE investimento_movs SET ir = ir + 1 WHERE investimento_id = ? AND tipo = ?', [$p2, 'resgate']);
+$r2b = rf_rendimento_periodo($inv2, rf_movs($p2), $de, $ate);
+igual($r2b['liquido'], $r2['liquido'] - 1, 'IR a mais cobrado pelo banco no resgate reduz o líquido exatamente em R$ 1,00');
+igual($r2b['bruto'], $r2['bruto'], 'e não muda o bruto');
+
+// movimentos futuros (agendados) nao entram: nada e projetado
+$antesFut = rf_rendimento_periodo($inv2, rf_movs($p2), $de, $ate);
+$movInv($p2, date('Y-m-d', strtotime('+20 day')), 'aporte', 700);
+$movInv($p2, date('Y-m-d', strtotime('+10 day')), 'rendimento', 999);
+$movInv($p2, '2026-04-15', 'aporte', 300);
+$depFut = rf_rendimento_periodo($inv2, rf_movs($p2), $de, $ate);
+igual($depFut['bruto'], $antesFut['bruto'], 'movimentos depois do fim do período não mudam o bruto');
+igual($depFut['liquido'], $antesFut['liquido'], 'nem o líquido');
+
+// periodo comeca antes do primeiro aporte
+$p3 = investimento_salvar(['nome' => 'Per Pré tardio', 'produto' => 'tesouro', 'indexador' => 'pre', 'taxa_anual' => '12']);
+$movInv($p3, '2026-03-10', 'aporte', 1000);
+$r3 = rf_rendimento_periodo(q_one('SELECT * FROM investimentos WHERE id = ?', [$p3]), rf_movs($p3), $de, $ate);
+igual($r3['bruto'], 1000 * ($G('2026-03-10', $ate) - 1), 'investimento que começou no mês: rendimento = saldo final - aplicado');
+
+// isento: liquido = bruto; manual: reajuste negativo e rendimento informado entram
+$p4 = investimento_salvar(['nome' => 'Per LCI pré', 'produto' => 'lci', 'indexador' => 'pre', 'taxa_anual' => '12']);
+$movInv($p4, '2026-01-05', 'aporte', 1000);
+$r4 = rf_rendimento_periodo(q_one('SELECT * FROM investimentos WHERE id = ?', [$p4]), rf_movs($p4), $de, $ate);
+igual($r4['liquido'], $r4['bruto'], 'LCI isenta: líquido = bruto');
+ok($r4['bruto'] > 0, 'LCI rendeu no mês');
+$p5 = investimento_salvar(['nome' => 'Per Manual', 'produto' => 'acoes']);
+$movInv($p5, '2026-01-05', 'aporte', 1000);
+$movInv($p5, '2026-03-10', 'reajuste', -50);
+$movInv($p5, '2026-03-12', 'rendimento', 20);
+$r5 = rf_rendimento_periodo(q_one('SELECT * FROM investimentos WHERE id = ?', [$p5]), rf_movs($p5), $de, $ate);
+igual($r5['bruto'], -30, 'manual: reajuste de -50 e rendimento de +20 dão -30 (pode ser negativo)');
+igual($r5['liquido'], -30, 'manual sem imposto: líquido = bruto');
+$r5ano = rf_rendimento_periodo(q_one('SELECT * FROM investimentos WHERE id = ?', [$p5]), rf_movs($p5), '2026-01-01', $ate);
+igual($r5ano['bruto'], -30, 'ano: o aporte de janeiro não conta como rendimento');
+$r6 = rf_rendimento_periodo($inv1, [], $de, $ate);
+ok($r6['bruto'] == 0.0 && $r6['liquido'] == 0.0, 'sem movimentos, rendimento zero');
+
+// total da carteira (inclui inativos) = soma dos investimentos
+q('UPDATE investimentos SET ativo = 0 WHERE id = ?', [$p3]);
+$tot = investimentos_rendimento_periodos($ate);
+ok($tot['mes']['de'] === '2026-03-01' && $tot['ano']['de'] === '2026-01-01' && $tot['mes']['ate'] === $ate, 'mês e ano começam no dia 1 e vão até a data de hoje');
+$somaMes = $somaAnoL = 0.0;
+foreach (q_all('SELECT * FROM investimentos WHERE perfil_id = ?', [perfil_id()]) as $iv) {
+    $somaMes += rf_rendimento_periodo($iv, rf_movs((int) $iv['id']), '2026-03-01', $ate)['bruto'];
+    $somaAnoL += rf_rendimento_periodo($iv, rf_movs((int) $iv['id']), '2026-01-01', $ate)['liquido'];
+}
+igual($tot['mes']['bruto'], $somaMes, 'KPI do mês = soma dos investimentos (inclusive o inativo)');
+igual($tot['ano']['liquido'], $somaAnoL, 'KPI líquido do ano = soma dos investimentos');
+
 echo "\n" . ($falhas ? "$falhas FALHA(S)\n" : "TODOS OS TESTES PASSARAM\n");
 exit($falhas ? 1 : 0);

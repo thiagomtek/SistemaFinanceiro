@@ -11,6 +11,17 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.13.4', 'build' => '20261031.2', 'data' => '31/10/2026', 'hora' => '16:19',
+                'titulo' => 'Rendimento do mês e do ano em Investimentos',
+                'destaque' => 'Quatro novos indicadores mostram quanto seus investimentos renderam no mês e no ano, bruto e líquido de imposto, sempre até hoje e sem projeção.',
+                'categorias' => array(
+                    array('nome' => 'Novidades', 'icone' => 'fa-line-chart', 'cor' => '#16a34a', 'itens' => array(
+                        array('titulo' => 'Bruto e líquido, mês e ano', 'descricao' => 'Aplicar e resgatar não conta como rendimento: só o que o saldo ganhou além do dinheiro que entrou e saiu. O líquido desconta o IR e o IOF pagos nos resgates e o estimado sobre o que segue aplicado.'),
+                        array('titulo' => 'Só o que já aconteceu', 'descricao' => 'Aplicações e resgates agendados para depois de hoje e dias futuros não entram no cálculo.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.13.3', 'build' => '20261031.1', 'data' => '31/10/2026', 'hora' => '15:56',
                 'titulo' => 'Resgate com a conta de destino obrigatória',
                 'destaque' => 'No resgate de investimento você agora precisa escolher a conta que recebe o valor, para o resgate sempre aparecer nos lançamentos.',

@@ -61,6 +61,38 @@ function investimentos_com_saldo(?string $ate = null): array
     return $lista;
 }
 
+/**
+ * Rendimento realizado no mes corrente (dia 1 ate hoje) e no ano corrente (1o de janeiro ate hoje), bruto e liquido, somando
+ * TODOS os investimentos do perfil (inclusive os inativos: o que rendeu no periodo e rendimento de verdade). Sem projecao.
+ * @return array{mes: array{de: string, ate: string, bruto: float, liquido: float}, ano: array{de: string, ate: string, bruto: float, liquido: float}}
+ */
+function investimentos_rendimento_periodos(?string $hoje = null): array
+{
+    $hoje = $hoje ?: date('Y-m-d');
+    $out = [
+        'mes' => ['de' => substr($hoje, 0, 7) . '-01', 'ate' => $hoje, 'bruto' => 0.0, 'liquido' => 0.0],
+        'ano' => ['de' => substr($hoje, 0, 4) . '-01-01', 'ate' => $hoje, 'bruto' => 0.0, 'liquido' => 0.0],
+    ];
+    $lista = q_all('SELECT * FROM investimentos WHERE perfil_id = ?', [perfil_id()]);
+    if (array_filter($lista, function ($i) { return $i['indexador'] === 'cdi'; })) {
+        indices_garantir();
+    }
+    foreach ($lista as $i) {
+        $movs = rf_movs((int) $i['id']);
+        if (!$movs) {
+            continue;
+        }
+        // um unico fator de crescimento por investimento, igual nas quatro simulacoes
+        $cfg = ['fator' => rf_fator_fn($i, min($movs[0]['data'], add_dias($out['ano']['de'], -1)), add_dias($hoje, 2))];
+        foreach (['mes', 'ano'] as $p) {
+            $r = rf_rendimento_periodo($i, $movs, $out[$p]['de'], $hoje, $cfg);
+            $out[$p]['bruto'] += $r['bruto'];
+            $out[$p]['liquido'] += $r['liquido'];
+        }
+    }
+    return $out;
+}
+
 /** Total investido (ativos) bruto e liquido de IR/IOF, numa unica simulacao. @return array{bruto: float, liquido: float} */
 function totais_investidos(?array $investimentos = null): array
 {

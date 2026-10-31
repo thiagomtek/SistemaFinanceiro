@@ -78,6 +78,7 @@ foreach ($ativos as $i) {
     $totPrincipal += $i['principal'];
 }
 $idx = indices_resumo();
+$rendP = investimentos_rendimento_periodos();
 $contas = array_values(array_filter(contas_do_perfil(true), function ($c) { return $c['tipo'] !== 'investimento'; }));
 $detalheId = (int) ($_GET['id'] ?? 0);
 $detalhe = null;
@@ -111,6 +112,18 @@ require __DIR__ . '/header.php';
   <div class="kpi roxo"><i class="fa fa-percent kpi-icone"></i><div class="kpi-label">CDI hoje</div><div class="kpi-valor"><?= number_format($idx['cdi_anual'], 2, ',', '.') ?>% a.a.</div>
     <div class="kpi-detalhe"><?= $idx['cdi_dia'] !== null ? number_format($idx['cdi_dia'], 4, ',', '.') . '% ao dia útil (' . e(data_br($idx['data'])) . ')' : 'sem dado ainda' ?> · Selic <?= number_format($idx['selic'], 2, ',', '.') ?>%</div></div>
 </div>
+
+<?php $kpiRend = [
+    ['mes', 'bruto', 'Rendimento bruto do mês', 'azul', 'fa-line-chart'], ['mes', 'liquido', 'Rendimento líquido do mês', 'verde', 'fa-money'],
+    ['ano', 'bruto', 'Rendimento bruto do ano', 'azul', 'fa-line-chart'], ['ano', 'liquido', 'Rendimento líquido do ano', 'verde', 'fa-money'],
+]; ?>
+<div class="kpi-grid">
+<?php foreach ($kpiRend as [$per, $tipo, $rot, $cor, $ico]): $r = $rendP[$per]; $v = $r[$tipo]; ?>
+  <div class="kpi <?= $cor ?>"><i class="fa <?= $ico ?> kpi-icone"></i><div class="kpi-label"><?= e($rot) ?></div><div class="kpi-valor <?= $v < -0.004 ? 'text-danger' : 'text-success' ?>"><?= brl($v) ?></div>
+    <div class="kpi-detalhe"><?= e(data_br($r['de'])) ?> a <?= e(data_br($r['ate'])) ?> (hoje)<?= $tipo === 'liquido' ? ' · após IR e IOF' : ' · sem imposto' ?></div></div>
+<?php endforeach; ?>
+</div>
+<p class="text-muted" style="font-size:12px;margin:-4px 0 14px">Rendimento realizado até hoje, sem projeção: variação do saldo menos aplicações mais resgates (aplicar e resgatar não é rendimento). Inclui reajustes de saldo e investimentos inativos. O líquido desconta o IR e o IOF pagos nos resgates do período e a variação do imposto estimado sobre o saldo que continua aplicado.</p>
 
 <?php $invsAtivos = array_values(array_filter($invs, function ($x) { return (int) $x['ativo'] === 1; }));
 $invsInativos = array_values(array_filter($invs, function ($x) { return (int) $x['ativo'] !== 1; }));

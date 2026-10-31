@@ -273,3 +273,9 @@ Autorizada pelo Thiago em 29/10/2026, depois de a simulação da carga do histó
 | Regra | Antes | Agora |
 |---|---|---|
 | **RN-32 Média da projeção e histórico importado** | A média dos 3 últimos meses completos somava todo lançamento avulso, inclusive os vindos de importação | Lançamentos de importações marcadas como histórico (`importacoes.tipo = 'historico'`) ficam fora da média (`sql_sem_historico`): o histórico não traz a marca de série (salário, faturas) e contaria em dobro o que a projeção já agenda. Continuam valendo em lançamentos, faturas, extrato e relatórios. |
+
+## 12. Rendimento mensal e anual dos investimentos (v1.13.4)
+
+- **RN-36** Os KPIs de Investimentos mostram o rendimento **realizado** do mês (dia 1 até hoje) e do ano (1º de janeiro até hoje), bruto e líquido, somando todos os investimentos do perfil, inclusive os inativos. Nada é projetado: movimentos com data depois de hoje e dias futuros não entram.
+- **RN-37** Aplicar e resgatar não é rendimento. **Bruto** = saldo bruto hoje − saldo bruto na véspera do início do período − aplicações do período + resgates brutos do período. Reajustes de saldo e rendimentos informados à mão fazem parte do saldo e, portanto, do rendimento (podem ser negativos).
+- **RN-38** **Líquido** = saldo líquido hoje (após o IR/IOF que seriam retidos se resgatasse tudo hoje) − o mesmo na véspera do início − aplicações + o que os resgates do período realmente pagaram (valor − IR − IOF gravados no movimento, que o usuário pode ter corrigido). Em investimento isento ou sem imposto, líquido = bruto.
