@@ -11,6 +11,16 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.13.6', 'build' => '20261031.4', 'data' => '31/10/2026', 'hora' => '16:35',
+                'titulo' => 'Títulos dos indicadores sem corte',
+                'destaque' => 'Os títulos longos dos indicadores (KPIs) agora quebram em mais de uma linha em vez de terminar em reticências.',
+                'categorias' => array(
+                    array('nome' => 'Correções', 'icone' => 'fa-wrench', 'cor' => '#d97706', 'itens' => array(
+                        array('titulo' => 'Texto completo nos indicadores', 'descricao' => 'Vale para todas as telas, como "Rendimento líquido do ano" em Investimentos, principalmente no celular.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.13.5', 'build' => '20261031.3', 'data' => '31/10/2026', 'hora' => '16:26',
                 'titulo' => 'Painel de KPIs e gráficos por investimento',
                 'destaque' => 'Clique no nome do investimento ou no novo botão de gráfico na coluna Ações para ver os indicadores e os gráficos só daquele investimento.',

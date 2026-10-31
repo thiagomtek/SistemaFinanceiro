@@ -436,3 +436,11 @@ Pendências / ressalvas:
 - O visual (modal XL, grade dos gráficos, tooltip do botão) não foi visto em navegador real.
 
 **Publicação da v1.13.5 (31/10/2026, ~16:35):** arquivos enviados, tag de reversão `sistema-financeiro-fin_app:rollback-1.13.4`, build do `fin_app`, `php -l` nos quatro PHP na imagem nova, troca só do `fin_app` com `--no-deps` (`fin_db` seguiu healthy). Pelo Caddy: login 200, `api_investimento_painel.php` sem sessão 401, `inv_painel.js` 200. Sem alteração de banco. Tela autenticada não vista.
+
+## v1.13.6 — títulos de KPI sem corte (build 20261031.4) — 31/10/2026, 16:35
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/assets/css/financeiro.css` (`.kpi .kpi-label`: `white-space: normal; overflow-wrap: anywhere; line-height: 1.25` no lugar de `nowrap` + reticências), `config_versao.php`, `config_novidades.php`. Alteração global: vale para todos os KPIs do sistema; o título longo passa a ocupar mais de uma linha e o card cresce na altura.
+
+Verificado: sintaxe PHP (ver execução abaixo). Pendências: não visto em navegador (desktop e celular); não publicado.

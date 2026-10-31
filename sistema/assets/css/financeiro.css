@@ -100,7 +100,7 @@ body.login-page { background: #0f172a; display: flex; align-items: center; justi
   border-radius: 8px; padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,0,0,.04); min-height: 72px; transition: all .2s ease-in-out; }
 .kpi:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(15,23,42,.08); border-color: #cbd5e1; }
 .kpi > * { grid-column: 1; min-width: 0; }
-.kpi .kpi-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .kpi-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
 .kpi .kpi-valor { font-size: 20px; font-weight: 800; color: #0f172a; line-height: 1.2; letter-spacing: -.02em; margin-top: 3px; }
 .kpi .kpi-detalhe { font-size: 12px; color: #64748b; margin-top: 2px; }
 .kpi .kpi-icone { grid-column: 2; grid-row: 1 / span 3; position: static; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%;
