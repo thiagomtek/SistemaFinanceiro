@@ -373,5 +373,24 @@ foreach (q_all('SELECT * FROM investimentos WHERE perfil_id = ?', [perfil_id()])
 igual($tot['mes']['bruto'], $somaMes, 'KPI do mês = soma dos investimentos (inclusive o inativo)');
 igual($tot['ano']['liquido'], $somaAnoL, 'KPI líquido do ano = soma dos investimentos');
 
+echo "== painel de um investimento (modal)\n";
+$pn = investimento_painel($p2);
+$hojePn = date('Y-m-d');
+$acumPn = rf_rendimento_periodo($inv2, array_values(array_filter(rf_movs($p2), function ($m) use ($hojePn) { return $m['data'] <= $hojePn; })), '2026-01-05', $hojePn);
+ok(!$pn['vazio'] && $pn['primeira_data'] === '2026-01-05', 'painel traz a primeira movimentação');
+igual($pn['kpis']['acum_bruto'], $acumPn['bruto'], 'rendimento bruto acumulado do painel = motor');
+igual($pn['kpis']['acum_liquido'], $acumPn['liquido'], 'rendimento líquido acumulado do painel = motor');
+igual(array_sum($pn['serie']['rend_bruto']), $pn['kpis']['acum_bruto'], 'a soma dos rendimentos mensais fecha com o acumulado (bruto)', 0.05);
+igual(array_sum($pn['serie']['rend_liquido']), $pn['kpis']['acum_liquido'], 'a soma dos rendimentos mensais fecha com o acumulado (líquido)', 0.05);
+ok(count($pn['serie']['labels']) === count($pn['serie']['bruto']) && count($pn['serie']['labels']) === count($pn['serie']['rend_liquido']), 'séries com o mesmo tamanho');
+igual(end($pn['serie']['bruto']), $pn['kpis']['saldo_bruto'], 'último ponto da série = saldo bruto de hoje');
+igual(end($pn['serie']['liquido']), $pn['kpis']['saldo_liquido'], 'último ponto do líquido = saldo líquido de hoje');
+igual($pn['composicao']['principal'] + $pn['composicao']['rendimento_liquido'] + $pn['composicao']['impostos'], $pn['kpis']['saldo_bruto'], 'composição (aplicado + rendimento + imposto) fecha com o saldo bruto', 0.02);
+igual(end($pn['serie']['aplicado']), 1000 + 500 + 300 - 200, 'aplicado = aplicações − resgates até hoje (o aporte de 700 agendado para depois não entra)');
+igual($pn['kpis']['aportes'], 1000 + 500 + 300, 'aportes do painel não incluem os futuros');
+$pnVazio = investimento_painel(investimento_salvar(['nome' => 'Sem movimentos', 'produto' => 'cdb']));
+ok($pnVazio['vazio'] === true && !isset($pnVazio['serie']), 'investimento sem movimentos devolve painel vazio');
+lanca(function () { investimento_painel(999999); }, 'investimento de outro perfil ou inexistente é recusado');
+
 echo "\n" . ($falhas ? "$falhas FALHA(S)\n" : "TODOS OS TESTES PASSARAM\n");
 exit($falhas ? 1 : 0);

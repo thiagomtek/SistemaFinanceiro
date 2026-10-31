@@ -151,7 +151,7 @@ foreach ([[$invsAtivos, false], [$invsInativos, true]] as [$lista, $ina]):
   <tbody>
   <?php foreach ($lista as $i): $rend = $i['saldo'] - $i['principal']; ?>
     <tr style="<?= $i['ativo'] ? '' : 'opacity:.55' ?>">
-      <td><a href="investimentos.php?id=<?= (int) $i['id'] ?>"><strong><?= e($i['nome']) ?></strong></a><?= $i['instituicao'] ? '<br><small class="text-muted">' . e($i['instituicao']) . '</small>' : '' ?>
+      <td><a href="investimentos.php?id=<?= (int) $i['id'] ?>" data-modal="modal-painel" data-painel="<?= (int) $i['id'] ?>" data-nome="<?= e($i['nome']) ?>" title="Ver KPIs e gráficos"><strong><?= e($i['nome']) ?></strong></a><?= $i['instituicao'] ? '<br><small class="text-muted">' . e($i['instituicao']) . '</small>' : '' ?>
         <?php if ($i['tributacao'] === 'isento'): ?> <span class="erp-badge erp-badge-success" title="Sem imposto de renda">isento</span><?php endif; ?></td>
       <td><?= e($i['rotulo']) ?><?= $i['liquidez'] === 'vencimento' && $i['data_vencimento'] ? '<br><small class="text-muted">vence ' . e(data_br($i['data_vencimento'])) . '</small>' : '' ?></td>
       <td class="num"><?= brl($i['principal']) ?></td>
@@ -160,6 +160,7 @@ foreach ([[$invsAtivos, false], [$invsInativos, true]] as [$lista, $ina]):
       <td class="num"><?= brl($i['ir'] + $i['iof']) ?></td>
       <td class="num"><strong><?= brl($i['liquido']) ?></strong></td>
       <td class="acoes">
+        <a href="investimentos.php?id=<?= (int) $i['id'] ?>" class="cli-btn-acao btn-acao-ver" title="KPIs e gráficos" data-modal="modal-painel" data-painel="<?= (int) $i['id'] ?>" data-nome="<?= e($i['nome']) ?>"><i class="fa fa-pie-chart"></i></a>
         <?php if ($i['ativo']): ?>
           <a href="#" class="erp-btn-acao btn-acao-sucesso" title="Aplicar (conta → investimento)" data-modal="modal-aplicar" data-preencher="<?= e(json_encode(['investimento_id' => $i['id'], 'data' => date('Y-m-d'), 'efetivada' => 1])) ?>"><i class="fa fa-arrow-circle-right"></i></a>
           <a href="#" class="cli-btn-acao btn-acao-ver" title="Resgatar (investimento → conta)" data-modal="modal-resgatar" data-preencher="<?= e(json_encode(['investimento_id' => $i['id'], 'data' => date('Y-m-d'), 'efetivada' => 1, 'modo' => 'total'])) ?>"><i class="fa fa-arrow-circle-left"></i></a>
@@ -182,7 +183,7 @@ foreach ([[$invsAtivos, false], [$invsInativos, true]] as [$lista, $ina]):
 endforeach; ?>
 
 <?php if ($detalhe): ?>
-<div class="card card-outline card-info">
+<div class="card card-outline card-info" id="detalhe">
   <div class="card-header"><h3 class="card-title"><i class="fa fa-search text-info"></i> <?= e($detalhe['nome']) ?> — lotes e movimentações</h3>
     <div class="card-tools"><a href="investimentos.php" class="btn btn-outline-secondary btn-sm">Fechar</a></div></div>
   <div class="card-body p-0">
@@ -240,6 +241,27 @@ endforeach; ?>
   </div>
 </div>
 <?php endif; ?>
+
+<div class="modal fin-modal erp-modal-xl" id="modal-painel">
+  <div class="modal-dialog">
+    <div class="modal-header"><h4 class="modal-title"><i class="fa fa-pie-chart"></i> <span id="pn-titulo">Investimento</span> <small class="text-muted" id="pn-sub" style="font-weight:400"></small></h4><button type="button" class="close" data-fechar>&times;</button></div>
+    <div class="modal-body">
+      <div id="pn-msg" class="text-muted" style="padding:24px 0;text-align:center"></div>
+      <div id="pn-corpo" class="hidden">
+        <div class="kpi-grid" id="pn-kpis"></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
+          <div class="painel" style="margin:0"><h4><i class="fa fa-line-chart text-warning"></i> Evolução do saldo</h4><div class="chart-box" style="height:260px"><canvas id="pn-ch-saldo"></canvas></div></div>
+          <div class="painel" style="margin:0"><h4><i class="fa fa-bar-chart text-primary"></i> Rendimento por mês</h4><div class="chart-box" style="height:260px"><canvas id="pn-ch-rend"></canvas></div></div>
+          <div class="painel" style="margin:0"><h4><i class="fa fa-pie-chart text-success"></i> De onde vem o saldo</h4>
+            <div class="chart-box" style="height:260px" id="pn-comp-box"><canvas id="pn-ch-comp"></canvas></div>
+            <div class="text-muted hidden" id="pn-comp-vazio" style="padding:30px 20px;text-align:center">Sem rendimento positivo para mostrar a composição.</div></div>
+        </div>
+        <p class="text-muted" id="pn-nota" style="font-size:12px;margin:12px 0 0"></p>
+      </div>
+    </div>
+    <div class="modal-footer"><a href="#" id="pn-detalhe" class="btn btn-outline-primary"><i class="fa fa-list"></i> Lotes e movimentações</a><button type="button" class="btn btn-secondary" data-fechar>Fechar</button></div>
+  </div>
+</div>
 
 <div class="modal fin-modal erp-modal-md" id="modal-inv">
   <form class="modal-dialog" method="post" id="form-inv">
@@ -401,4 +423,4 @@ endforeach; ?>
   new MutationObserver(function () { setTimeout(function () { previa(false); }, 60); }).observe(document.getElementById('modal-resgatar'), { attributes: true, attributeFilter: ['class'] });
 })();
 </script>
-<?php require __DIR__ . '/footer.php'; ?>
+<?php $PAGINA_SCRIPTS = ['assets/js/chart.umd.min.js', 'assets/js/inv_painel.js']; require __DIR__ . '/footer.php'; ?>

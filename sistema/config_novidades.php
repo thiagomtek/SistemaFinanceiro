@@ -11,6 +11,18 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.13.5', 'build' => '20261031.3', 'data' => '31/10/2026', 'hora' => '16:26',
+                'titulo' => 'Painel de KPIs e gráficos por investimento',
+                'destaque' => 'Clique no nome do investimento ou no novo botão de gráfico na coluna Ações para ver os indicadores e os gráficos só daquele investimento.',
+                'categorias' => array(
+                    array('nome' => 'Novidades', 'icone' => 'fa-pie-chart', 'cor' => '#16a34a', 'itens' => array(
+                        array('titulo' => 'KPIs do investimento', 'descricao' => 'Saldo bruto e líquido, rendimento acumulado, do mês e do ano, bruto e líquido de imposto.'),
+                        array('titulo' => 'Três gráficos', 'descricao' => 'Evolução do saldo (bruto, líquido e valor aplicado), rendimento por mês e de onde vem o saldo (aplicado, rendimento e imposto estimado). Tudo até hoje, sem projeção.'),
+                        array('titulo' => 'Mais claro de navegar', 'descricao' => 'O nome do investimento agora abre este painel; os lotes e o histórico de movimentações ficam no botão "Lotes e movimentações" dentro dele.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.13.4', 'build' => '20261031.2', 'data' => '31/10/2026', 'hora' => '16:19',
                 'titulo' => 'Rendimento do mês e do ano em Investimentos',
                 'destaque' => 'Quatro novos indicadores mostram quanto seus investimentos renderam no mês e no ano, bruto e líquido de imposto, sempre até hoje e sem projeção.',

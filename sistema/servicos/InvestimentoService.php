@@ -93,6 +93,80 @@ function investimentos_rendimento_periodos(?string $hoje = null): array
     return $out;
 }
 
+/**
+ * Painel de UM investimento (modal da tela Investimentos): KPIs e series para os graficos, tudo realizado ate hoje (sem projecao).
+ * Serie mensal: saldo bruto/liquido no fim de cada mes (o mes corrente vai ate hoje), valor liquido aplicado (aportes - resgates)
+ * e rendimento bruto/liquido de cada mes (mesma formula de rf_rendimento_periodo). Mostra no maximo os ultimos 36 meses.
+ */
+function investimento_painel(int $id): array
+{
+    $inv = rf_investimento($id);
+    $hoje = date('Y-m-d');
+    $r2 = function (float $v): float { return round($v, 2); };
+    $movs = array_values(array_filter(rf_movs($id), function ($m) use ($hoje) { return $m['data'] <= $hoje; }));
+    $base = ['nome' => $inv['nome'], 'rotulo' => inv_rotulo_indexador($inv), 'instituicao' => $inv['instituicao'], 'ativo' => (int) $inv['ativo'],
+        'tributacao' => $inv['tributacao'], 'primeira_data' => $movs ? $movs[0]['data'] : null, 'vazio' => !$movs];
+    if (!$movs) {
+        return $base;
+    }
+    if ($inv['indexador'] === 'cdi') {
+        indices_garantir();
+    }
+    $cfg = ['fator' => rf_fator_fn($inv, $movs[0]['data'], add_dias($hoje, 2))];
+    $s = rf_simular($inv, $movs, $hoje, $cfg);
+    $liq = $s['liquidacao'];
+    $impostos = $liq['ir'] + $liq['iof'];
+    $acum = rf_rendimento_periodo($inv, $movs, $movs[0]['data'], $hoje, $cfg);
+    $mes = rf_rendimento_periodo($inv, $movs, substr($hoje, 0, 7) . '-01', $hoje, $cfg);
+    $ano = rf_rendimento_periodo($inv, $movs, substr($hoje, 0, 4) . '-01-01', $hoje, $cfg);
+
+    $serie = ['labels' => [], 'bruto' => [], 'liquido' => [], 'aplicado' => [], 'rend_bruto' => [], 'rend_liquido' => []];
+    // estado em uma data: saldos e acumulados dos movimentos gravados (o liquido usa o imposto realmente pago nos resgates)
+    $estado = function (string $ate) use ($inv, $movs, $cfg): array {
+        $sim = rf_simular($inv, $movs, $ate, $cfg);
+        $e = ['b' => $sim['saldo_bruto'], 'l' => $sim['liquidacao']['liquido'], 'ap' => 0.0, 'rb' => 0.0, 'rl' => 0.0];
+        foreach ($movs as $x) {
+            if ($x['data'] > $ate) {
+                break;
+            }
+            if ($x['tipo'] === 'aporte') {
+                $e['ap'] += (float) $x['valor'];
+            } elseif ($x['tipo'] === 'resgate') {
+                $e['rb'] += (float) $x['valor'];
+                $e['rl'] += (float) $x['valor'] - (float) $x['ir'] - (float) $x['iof'];
+            }
+        }
+        return $e;
+    };
+    $meses = [];
+    for ($m = substr($movs[0]['data'], 0, 7) . '-01'; $m <= $hoje; $m = date('Y-m-d', strtotime($m . ' +1 month'))) {
+        $meses[] = $m;
+    }
+    $meses = array_slice($meses, -36);
+    $ant = $estado(add_dias($meses[0], -1));
+    foreach ($meses as $ini) {
+        $e = $estado(min(date('Y-m-t', strtotime($ini)), $hoje));
+        $serie['labels'][] = mes_label(substr($ini, 0, 7));
+        $serie['bruto'][] = $r2($e['b']);
+        $serie['liquido'][] = $r2($e['l']);
+        $serie['aplicado'][] = $r2($e['ap'] - $e['rb']);
+        $serie['rend_bruto'][] = $r2($e['b'] - $ant['b'] - ($e['ap'] - $ant['ap']) + ($e['rb'] - $ant['rb']));
+        $serie['rend_liquido'][] = $r2($e['l'] - $ant['l'] - ($e['ap'] - $ant['ap']) + ($e['rl'] - $ant['rl']));
+        $ant = $e;
+    }
+    return $base + [
+        'kpis' => [
+            'saldo_bruto' => $r2($s['saldo_bruto']), 'saldo_liquido' => $r2($liq['liquido']), 'impostos' => $r2($impostos),
+            'aportes' => $r2($acum['aportes']), 'resgates' => $r2($acum['resgates']),
+            'acum_bruto' => $r2($acum['bruto']), 'acum_liquido' => $r2($acum['liquido']),
+            'mes_bruto' => $r2($mes['bruto']), 'mes_liquido' => $r2($mes['liquido']), 'ano_bruto' => $r2($ano['bruto']), 'ano_liquido' => $r2($ano['liquido']),
+        ],
+        // composicao do saldo bruto: o que foi aplicado, o rendimento que fica depois de IR/IOF e o imposto estimado
+        'composicao' => ['principal' => $r2($s['principal']), 'rendimento_liquido' => $r2($s['saldo_bruto'] - $s['principal'] - $impostos), 'impostos' => $r2($impostos)],
+        'serie' => $serie,
+    ];
+}
+
 /** Total investido (ativos) bruto e liquido de IR/IOF, numa unica simulacao. @return array{bruto: float, liquido: float} */
 function totais_investidos(?array $investimentos = null): array
 {

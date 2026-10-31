@@ -23,7 +23,7 @@ const PAGINA_MODULO = [
     'index.php' => 'dashboard', 'projecao.php' => 'projecao', 'api_projecao.php' => 'projecao',
     'lancamentos.php' => 'lancamentos', 'anexo.php' => 'lancamentos', 'contas.php' => 'contas',
     'cartoes.php' => 'cartoes', 'fatura.php' => 'cartoes', 'categorias.php' => 'categorias',
-    'investimentos.php' => 'investimentos', 'api_resgate_previa.php' => 'investimentos',
+    'investimentos.php' => 'investimentos', 'api_resgate_previa.php' => 'investimentos', 'api_investimento_painel.php' => 'investimentos',
     'importar_fatura.php' => 'importacoes', 'importar_extrato.php' => 'importacoes', 'usuarios.php' => 'usuarios',
 ];
 

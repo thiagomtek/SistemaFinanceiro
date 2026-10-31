@@ -419,3 +419,18 @@ Pendências / ressalvas:
 - O Itaú CDB DI aparece negativo no mês (−R$ 216,75 bruto) por causa do reajuste de −R$ 256,38 de 29/10; é dado, não erro do cálculo.
 
 **Publicação da v1.13.4 (31/10/2026, ~16:25):** arquivos enviados, tag de reversão `sistema-financeiro-fin_app:rollback-1.13.3`, build do `fin_app`, `php -l` nos três arquivos na imagem nova, troca só do `fin_app` com `--no-deps` (`fin_db` seguiu healthy, 33 h no ar). Login responde 200 pelo Caddy. Sem alteração de banco. Tela com os KPIs não vista autenticada.
+
+## v1.13.5 — painel de KPIs e gráficos por investimento (build 20261031.3) — 31/10/2026, 16:26
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/investimentos.php` (botão "KPIs e gráficos" na coluna Ações, nome do investimento abre o mesmo painel, modal e `id="detalhe"`), `sistema/api_investimento_painel.php` (novo), `sistema/servicos/InvestimentoService.php` (`investimento_painel`), `sistema/servicos/PermissaoService.php` (endpoint no módulo `investimentos`), `sistema/assets/js/inv_painel.js` (novo), `tools/ci/testes_investimentos.php`, `config_versao.php`, `config_novidades.php`.
+
+Painel: 8 KPIs (saldo bruto e líquido, rendimento acumulado, do mês e do ano, bruto e líquido) e 3 gráficos (evolução do saldo com valor aplicado, rendimento por mês, composição do saldo). Tudo até hoje, últimos 36 meses, sem projeção. Rendimento mensal pela mesma fórmula de `rf_rendimento_periodo`. Os lotes e as movimentações continuam na tela de detalhe, aberta pelo botão "Lotes e movimentações" do modal (UX: antes o nome levava a uma seção escondida abaixo da tabela).
+
+Code review (nível high): 7 achados; 5 corrigidos (resposta atrasada de um clique sobrescrevendo outro, aviso quando o Chart.js falha, uma simulação por mês no lugar de três, payload enxuto, teste de aplicações futuras que não falhava), 1 dispensado (reuso de `rf_serie`: não dá os acumulados de impostos pagos).
+
+Verificado: sintaxe e 10 suítes em PHP 7.4; 12 asserções novas do painel (acumulado = motor, soma dos meses = acumulado, último ponto = saldo de hoje, composição fecha, aplicado/aportes sem os agendados, investimento vazio, outro perfil recusado). Com os 5 investimentos reais de produção (só leitura): JSON do painel gerado pelo código novo e `inv_painel.js` exercitado num DOM simulado (8 KPIs e 2–3 gráficos por investimento, rosca ocultada no Itaú sem rendimento positivo, corrida de cliques e falta do Chart.js).
+
+Pendências / ressalvas:
+- O visual (modal XL, grade dos gráficos, tooltip do botão) não foi visto em navegador real.
