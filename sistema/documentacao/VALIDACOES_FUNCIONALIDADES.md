@@ -508,3 +508,5 @@ Verificado: `tools/ci/testes_projecao.php` (novo bloco: totais do mês = realiza
 
 Pendências / ressalvas:
 - Média de despesas avulsas: incluía o "Ajuste de saldo (saldo inicial zerado)" de R$ 5.781,41 de 26/10 (cerca de R$ 1.927 por mês de despesa projetada). Retirado com autorização do Thiago (RN-41): `sql_sem_reajuste_saldo()` na média e no abatimento do mês atual; teste novo em `testes_projecao.php`. O Reajuste de fatura de R$ 369,90 do período continua na média (não autorizado a alterar).
+
+**Publicação da v1.14.1 (03/11/2026):** a cópia de implantação estava igual ao commit anterior nos cinco arquivos alterados. Tag de reversão `sistema-financeiro-fin_app:rollback-1.14.0`, `php -l`, build do `fin_app` e troca só dele com `--no-deps` (`fin_db`, Caddy e ERP intactos). Contêiner: versão 1.14.1, `login.php` 200, `api_projecao.php` sem sessão 401, `projecao.js` publicado com os totais do mês. Sem alteração de banco. Tela de projeção autenticada não vista.
