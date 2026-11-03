@@ -85,10 +85,17 @@
     tb.innerHTML = s.map(function (x) {
       var cls = function (v) { return v < 0 ? ' text-danger' : ''; };
       var jaFeito = function (v) { return v > 0 ? ' title="Já realizado neste mês: ' + brl(v) + '"' : ''; };
+      var feitoInv = function (r) {
+        var t = [];
+        if (r.aplicacoes > 0) { t.push('aplicado ' + brl(r.aplicacoes)); }
+        if (r.resgates > 0) { t.push('resgatado ' + brl(r.resgates)); }
+        return t.length ? ' title="Já realizado neste mês: ' + t.join(', ') + '"' : '';
+      };
       return '<tr><td><strong>' + escapeHtml(x.label) + '</strong></td>' +
         '<td class="num text-success"' + jaFeito(x.realizado.receitas) + '>' + brl(x.receitas_mes) + '</td>' +
         '<td class="num"' + jaFeito(x.realizado.despesas) + '>' + brl(x.despesas_mes) + '</td>' +
         '<td class="num"' + jaFeito(x.realizado.faturas) + '>' + brl(x.faturas_mes) + '</td>' +
+        '<td class="num"' + feitoInv(x.realizado) + '>' + (Math.abs(x.invest_mes) > 0.004 ? brl(x.invest_mes) : '—') + '</td>' +
         '<td class="num' + cls(x.resultado_mes) + '">' + brl(x.resultado_mes) + '</td>' +
         '<td class="num">' + (x.aporte > 0 ? brl(x.aporte) : '—') + '</td>' +
         '<td class="num' + cls(x.saldo) + '"><strong>' + brl(x.saldo) + '</strong></td>' +

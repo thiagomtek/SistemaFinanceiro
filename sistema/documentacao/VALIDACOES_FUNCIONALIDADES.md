@@ -544,3 +544,18 @@ Verificado:
 - `lancamentos.js` usa a mesma ideia com `?novo=1`, mas o gatilho tem `href="#"`: sem risco de loop, não alterado.
 
 Pendências / ressalvas: ainda não publicado no servidor; o fluxo com o navegador e a sessão reais do usuário não foi reproduzido (a reprodução foi na instância local).
+
+## v1.14.3 — coluna de aplicações e resgates na projeção (build 20261103.4) — 03/11/2026 13:42
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/servicos/ProjecaoService.php`, `sistema/projecao.php`, `sistema/assets/js/projecao.js`, `tools/ci/testes_projecao.php`, `sistema/config_versao.php`, `sistema/config_novidades.php`.
+
+Motivo: no detalhe mês a mês de novembro, receitas R$ 29.381,23, despesas R$ 3.667,77 e faturas R$ 9.632,07 davam resultado −R$ 9.517,03. O cálculo estava certo (o resultado já descontava as aplicações de hoje no CDB do Itaú, R$ 13.798,42 + R$ 11.800,00 = R$ 25.598,42), mas nenhuma coluna mostrava as aplicações e a linha não fechava a olho. Nenhuma regra de negócio mudou: só passou a ser exibido o valor que já entrava no resultado.
+
+Verificado:
+- Conferência com a projeção de produção (leitura): resultado do mês = realizado (−R$ 62,56) + a realizar (−R$ 9.454,47); contas com saldo R$ 0,00 hoje, primeira conta negativa em 04/11.
+- `tools/ci/testes_projecao.php` (PHP 7.4): novo bloco com aplicação já feita e agendada; `invest_mes` = −20.300 e resultado do mês = receitas − despesas − faturas + aplicações/resgates; mês sem movimento fica zerado.
+- Tela em instância local descartável (PHP 7.4, SQLite, usuário de teste): 11 colunas no cabeçalho e na linha, valor da coluna −R$ 25.598,42, resultado −R$ 14.569,82 batendo com a conta, tooltip do realizado.
+
+Pendências / ressalvas: ainda não publicado no servidor; gráfico não alterado; tela não conferida com a sessão real do usuário.

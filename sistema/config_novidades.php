@@ -11,6 +11,16 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.14.3', 'build' => '20261103.4', 'data' => '03/11/2026', 'hora' => '13:42',
+                'titulo' => 'Projeção: coluna de aplicações e resgates no detalhe mês a mês',
+                'destaque' => 'O resultado do mês já descontava o que você aplica em investimentos, mas isso não aparecia. Agora a linha fecha: receitas − despesas − faturas ± aplicações/resgates.',
+                'categorias' => array(
+                    array('nome' => 'Melhorias', 'icone' => 'fa-magic', 'cor' => '#2563eb', 'itens' => array(
+                        array('titulo' => 'Coluna Aplic. / resgates', 'descricao' => 'Mostra, por mês, os resgates (+) menos as aplicações (−) em investimentos, já feitos e agendados; no mês atual, passe o mouse para ver o que já foi realizado. O cálculo do resultado e do saldo não mudou.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.14.2', 'build' => '20261103.3', 'data' => '03/11/2026', 'hora' => '11:13',
                 'titulo' => 'Investimentos: fim do recarregamento infinito depois de salvar',
                 'destaque' => 'Depois de aplicar, resgatar ou reajustar, a tela de Investimentos volta uma vez só e reabre o painel do investimento, sem entrar em loop.',
