@@ -601,3 +601,18 @@ Verificado:
 - Tela em instância local descartável (PHP 7.4, SQLite, usuário de teste): cabeçalho e linhas com 11 colunas, coluna Rendimento entre Resultado e Investido na sobra, sem erro de JavaScript (o investimento de teste é manual, então mostra "—").
 
 Pendências / ressalvas: rendimento é bruto (sem IR/IOF); o rendimento de novembro inclui o reajuste de −R$ 68,23 do Itaú; não visto com a sessão real do usuário; ainda não publicado.
+
+## v1.15.0 — risco do patrimônio frente à Selic, fase 1 (RN-44) (build 20261103.8) — 03/11/2026 14:08
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/servicos/RiscoService.php` (novo), `sistema/api_projecao_risco.php` (novo), `sistema/bootstrap.php`, `sistema/projecao.php`, `sistema/assets/js/projecao.js`, `tools/ci/testes_risco.php` (novo), `.github/workflows/ci.yml`, `sistema/documentacao/DOCUMENTACAO_TECNICA.md`, `REQUISITOS_E_REGRAS_DE_NEGOCIO.md`, `config_versao.php`, `config_novidades.php`. Sem alteração de banco.
+
+Escopo combinado com o Thiago: entrega em fases; fase 1 = cenários de Selic sobre o patrimônio na Projeção. Fases 2 (notícias diárias com Gemini e busca do Google, risco consolidado e histórico) e 3 (sugestões por classe de ativo) ainda não implementadas. A mensagem do pedido terminou no meio ("O sistema deve dar…"): o que faltava ainda precisa ser confirmado.
+
+Verificado:
+- `tools/ci/testes_risco.php` (PHP 7.4, SQLite, CDI de mentira): pré-fixado e manual não reagem (diferença zero nos 5 cenários); com CDB pós-fixado, o patrimônio cresce com a Selic, o cenário base é igual ao patrimônio da projeção e a sensibilidade = (+2 − −2) ÷ 4; ordem de grandeza (4 p.p. sobre R$ 100 mil ≈ R$ 4 mil em 12 meses, obtido R$ 4.218); exposição fecha com o total por tipo e por instituição, FGC e ações fora do FGC, inativo sai. Também passaram projeção, domínio e investimentos.
+- Dados reais de produção (leitura, cópia temporária no `fin_app`, nada gravado): 0,17 s para os 5 cenários; carteira 100% pós-fixada; sensibilidade de R$ 1.462,80 por p.p. em 12 meses (Selic −2 p.p.: −R$ 2.924,96, −1,42%); instituições BV 47,9%, Itaú 32,7%, Nubank 19,4%, nenhuma acima de 21% do limite do FGC. O rendimento do cenário base (R$ 19.871,92) é o mesmo da coluna Rendimento da projeção.
+- Tela em instância local descartável (PHP 7.4, SQLite, usuário de teste): painel carrega depois da tela principal, 5 cenários, tabelas de tipo e de instituição, sem erro de JavaScript; com carteira sem pós-fixado a frase explica que a Selic não altera o patrimônio.
+
+Pendências / ressalvas: não publicado ainda; marcação a mercado de pré-fixados e risco de ações/FII/fundos/cripto não são medidos; o limite do FGC é estimativa (o sistema não separa Tesouro e fundos de CDB/LCI/LCA); poupança segue a Selic de hoje nos cenários; não visto com a sessão real do usuário.

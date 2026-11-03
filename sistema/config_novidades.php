@@ -11,6 +11,17 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.15.0', 'build' => '20261103.8', 'data' => '03/11/2026', 'hora' => '14:08',
+                'titulo' => 'Projeção: risco do patrimônio frente à Selic (fase 1)',
+                'destaque' => 'A Projeção mostra quanto o patrimônio ao fim do horizonte muda se a Selic cair ou subir 2 e 4 pontos percentuais, e como cada investimento reage.',
+                'categorias' => array(
+                    array('nome' => 'Novidades', 'icone' => 'fa-star', 'cor' => '#16a34a', 'itens' => array(
+                        array('titulo' => 'Cenários de Selic', 'descricao' => 'Cinco cenários (Selic -4, -2, base, +2 e +4 p.p.) rodam a mesma projeção com o CDI deslocado e mostram o patrimônio ao fim, a diferença em R$ e em %, o rendimento no período e quanto cada 1 p.p. de Selic vale para o seu patrimônio.'),
+                        array('titulo' => 'Exposição da carteira', 'descricao' => 'Mostra quanto do investido é pós-fixado, pré-fixado, poupança ou manual e como cada tipo reage à Selic, e a concentração por instituição com o uso do limite de R$ 250 mil do FGC.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.14.6', 'build' => '20261103.7', 'data' => '03/11/2026', 'hora' => '13:56',
                 'titulo' => 'Projeção: rendimento esperado das aplicações, mês a mês, em R$',
                 'destaque' => 'O detalhe mês a mês ganhou a coluna Rendimento, com quanto as aplicações devem render em cada mês, em reais.',

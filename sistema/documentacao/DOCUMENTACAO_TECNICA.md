@@ -25,6 +25,7 @@ Usuário → Tailscale → Caddy (HTTPS) → fin_app (PHP/Apache, 172.17.0.1:809
 | `servicos/LancamentoService.php` | Validação, repetição/parcelas, edição, exclusão |
 | `servicos/InvestimentoService.php` | Aportes, resgates, rendimentos |
 | `servicos/ProjecaoService.php` | Projeção de saldo e patrimônio |
+| `servicos/RiscoService.php` | Risco do patrimônio frente à Selic: cenários (projeção com o CDI deslocado) e exposição por tipo de rendimento e por instituição (RN-44); API `api_projecao_risco.php` |
 | `servicos/DashboardService.php` | Agregações do dashboard |
 | `servicos/ImportacaoService.php` / `XlsxReaderService.php` | Leitura e aplicação de planilhas |
 | `servicos/PerfilService.php` | Usuário e perfil interno (um por usuário) |

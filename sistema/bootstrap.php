@@ -70,6 +70,7 @@ require_once __DIR__ . '/servicos/IndiceService.php';
 require_once __DIR__ . '/servicos/RendaFixaService.php';
 require_once __DIR__ . '/servicos/InvestimentoService.php';
 require_once __DIR__ . '/servicos/ProjecaoService.php';
+require_once __DIR__ . '/servicos/RiscoService.php';
 require_once __DIR__ . '/servicos/DashboardService.php';
 require_once __DIR__ . '/servicos/ImportacaoService.php';
 require_once __DIR__ . '/servicos/FaturaPdfService.php';

@@ -119,9 +119,51 @@
       '&cdi=' + encodeURIComponent($('p-cdi').value || '');
     fetch('api_projecao.php?' + qs, { credentials: 'same-origin' })
       .then(function (r) { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
-      .then(function (d) { renderizar(d); $('p-carregando').classList.add('hidden'); $('p-conteudo').classList.remove('hidden'); })
+      .then(function (d) { renderizar(d); $('p-carregando').classList.add('hidden'); $('p-conteudo').classList.remove('hidden'); carregarRisco(qs); })
       .catch(function (e) { $('p-carregando').innerHTML = '<div class="alert alert-danger">Não foi possível calcular a projeção (' + escapeHtml(e.message) + ').</div>'; })
       .then(function () { btn.disabled = false; });
+  }
+
+  // risco do patrimonio frente a Selic: calculo a parte (5 projecoes), carregado depois da tela principal
+  function carregarRisco(qs) {
+    var pct = function (v) { return Number(v).toFixed(1).replace('.', ',') + '%'; };
+    var sinal = function (v) { return (v > 0.004 ? '+ ' : (v < -0.004 ? '− ' : '')) + brl(Math.abs(v)); };
+    var cor = function (v) { return v > 0.004 ? ' text-success' : (v < -0.004 ? ' text-danger' : ''); };
+    $('p-risco-corpo').classList.add('hidden');
+    $('p-risco-carregando').classList.remove('hidden');
+    $('p-risco-carregando').innerHTML = '<i class="fa fa-spinner fa-spin"></i> Calculando os cenários…';
+    fetch('api_projecao_risco.php?' + qs, { credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
+      .then(function (d) {
+        var b = d.base;
+        var baixo = d.cenarios[1], alto = d.cenarios[3];
+        $('p-risco-info').textContent = '· horizonte de ' + b.meses + ' meses, CDI base de ' + String(b.cdi).replace('.', ',') + '% a.a.';
+        if (Math.abs(d.sensibilidade_pp) < 0.005) {
+          $('p-risco-resumo').innerHTML = 'Com os investimentos de hoje, mudanças na Selic <strong>não alteram</strong> o patrimônio ao fim do horizonte: nada do que está investido rende por CDI (veja o tipo de rendimento abaixo).';
+        } else {
+          $('p-risco-resumo').innerHTML = 'Cada <strong>1 p.p.</strong> de Selic muda o patrimônio ao fim do horizonte em cerca de <strong>' + brl(Math.abs(d.sensibilidade_pp)) + '</strong>. ' +
+            'Se a Selic cair 2 p.p., o patrimônio ao fim fica em <strong>' + brl(baixo.patrimonio_fim) + '</strong> (' + sinal(baixo.dif_patrimonio) + ', ' + pct(baixo.dif_pct) + ' em relação ao cenário base); ' +
+            'se subir 2 p.p., fica em <strong>' + brl(alto.patrimonio_fim) + '</strong> (' + sinal(alto.dif_patrimonio) + ').';
+        }
+        $('t-risco').querySelector('tbody').innerHTML = d.cenarios.map(function (c) {
+          var base = c.delta === 0;
+          return '<tr' + (base ? ' style="font-weight:700"' : '') + '><td>' + escapeHtml(c.rotulo) + '</td><td class="num">' + String(c.selic).replace('.', ',') + '%</td><td class="num">' + String(c.cdi).replace('.', ',') + '%</td>' +
+            '<td class="num">' + brl(c.patrimonio_fim) + '</td><td class="num' + cor(c.dif_patrimonio) + '">' + (base ? '—' : sinal(c.dif_patrimonio)) + '</td>' +
+            '<td class="num' + cor(c.dif_pct) + '">' + (base ? '—' : pct(c.dif_pct)) + '</td><td class="num">' + brl(c.rendimento_total) + '</td></tr>';
+        }).join('');
+        var e = d.exposicao;
+        $('t-risco-idx').querySelector('tbody').innerHTML = e.por_indexador.map(function (x) {
+          return '<tr><td>' + escapeHtml(x.rotulo) + '</td><td class="num">' + brl(x.valor) + '</td><td class="num">' + pct(x.pct) + '</td><td>' + escapeHtml(x.efeito) + '</td></tr>';
+        }).join('') || '<tr><td colspan="4" class="text-muted">Sem investimentos ativos.</td></tr>';
+        $('t-risco-inst').querySelector('tbody').innerHTML = e.por_instituicao.map(function (x) {
+          var alto = x.uso_fgc_pct >= 80;
+          return '<tr><td>' + escapeHtml(x.instituicao) + '</td><td class="num">' + brl(x.saldo) + '</td><td class="num">' + pct(x.pct) + '</td><td class="num">' + brl(x.renda_fixa) + '</td>' +
+            '<td class="num' + (alto ? ' text-danger' : '') + '">' + (x.renda_fixa > 0 ? pct(x.uso_fgc_pct) : '—') + '</td></tr>';
+        }).join('') || '<tr><td colspan="5" class="text-muted">Sem investimentos ativos.</td></tr>';
+        $('p-risco-carregando').classList.add('hidden');
+        $('p-risco-corpo').classList.remove('hidden');
+      })
+      .catch(function (e) { $('p-risco-carregando').innerHTML = '<span class="text-danger">Não foi possível calcular os cenários (' + escapeHtml(e.message) + ').</span>'; });
   }
 
   $('p-ok').addEventListener('click', carregar);
