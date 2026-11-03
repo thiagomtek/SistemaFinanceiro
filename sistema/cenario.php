@@ -7,7 +7,7 @@ require __DIR__ . '/header.php';
 <div class="filtros" style="justify-content:space-between;align-items:center">
   <div style="font-size:13px;color:#475569"><i class="fa fa-info-circle text-primary"></i> Indicadores oficiais (Banco Central e IBGE) e manchetes públicas, lidas por IA uma vez por dia. <strong>Apoio à decisão, não recomendação de investimento.</strong>
     <span class="text-muted" id="c-atualizado"></span></div>
-  <div class="campo" style="min-width:0"><button class="btn btn-primary btn-sm" id="c-atualizar" style="height:36px"><i class="fa fa-refresh"></i> Atualizar agora</button></div>
+  <?php if (usuario_admin_sistema()): ?><div class="campo" style="min-width:0"><button class="btn btn-primary btn-sm" id="c-atualizar" style="height:36px"><i class="fa fa-refresh"></i> Atualizar agora</button></div><?php endif; ?>
 </div>
 
 <div id="c-carregando" class="vazio"><i class="fa fa-spinner fa-spin"></i>Calculando o risco…</div>

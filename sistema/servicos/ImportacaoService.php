@@ -389,14 +389,14 @@ function importar_aplicar(array $linhas, array $mapContas, array $mapCats, strin
                         continue;
                     }
                     $cartaoId = $r[1];
-                    $cartaoRow = q_one('SELECT * FROM cartoes WHERE id = ?', [$cartaoId]);
+                    $cartaoRow = q_one('SELECT * FROM cartoes WHERE id = ? AND perfil_id = ?', [$cartaoId, $pid]);
                 } else {
                     $contaId = $r[1];
                     $mapa = $mapFaturas[importar_chave_fatura($l)] ?? '';
                     if ($l['tipo'] === 'despesa' && ctype_digit((string) $mapa) && pertence_ao_perfil('cartoes', (int) $mapa)) {
                         // RN-21/22: item de fatura; o cartao se perdeu na exportacao e o mes da fatura e o do vencimento
                         $cartaoId = (int) $mapa;
-                        $cartaoRow = q_one('SELECT * FROM cartoes WHERE id = ?', [$cartaoId]);
+                        $cartaoRow = q_one('SELECT * FROM cartoes WHERE id = ? AND perfil_id = ?', [$cartaoId, $pid]);
                         $contaId = null;
                         $faturaMesFixa = substr($l['data'], 0, 7);
                         if (importar_eh_reajuste_fatura($l)) {

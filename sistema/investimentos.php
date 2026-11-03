@@ -36,6 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$data || abs($valor) < 0.005) {
                 throw new InvalidArgumentException('Informe valor e data válidos.');
             }
+            rf_validar_data($data);
+            rf_exigir_espaco_mov((int) $invM['id']);
             q_insert('INSERT INTO investimento_movs (investimento_id, data, tipo, valor, obs) VALUES (?,?,?,?,?)', [$invM['id'], $data, 'rendimento', $valor, trim($_POST['obs'] ?? '') ?: null]);
             flash('Rendimento registrado.');
             $destino = 'investimentos.php?abrir=' . (int) $invM['id'] . '&aba=mov';
@@ -57,6 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             q('DELETE FROM investimentos WHERE id = ? AND perfil_id = ?', [$id, perfil_id()]);
             flash('Investimento e suas movimentações foram excluídos.');
         } elseif ($acao === 'atualizar_indices') {
+            if (!usuario_admin_sistema()) {
+                throw new InvalidArgumentException('Somente o administrador do sistema pode atualizar os índices (a atualização é automática).');
+            }
             $r = indices_atualizar(true);
             flash($r['mensagem'], $r['atualizado'] ? 'success' : 'warning');
         }
@@ -120,7 +125,7 @@ foreach ([[$invsAtivos, false], [$invsInativos, true]] as [$lista, $ina]):
   <div class="card-header">
     <h3 class="card-title"><i class="fa fa-list text-warning"></i> <?= $ina ? 'Investimentos inativos' : 'Carteira' ?> <small class="text-muted" style="font-weight:400">(<?= count($lista) ?>)</small></h3>
     <?php if (!$ina): ?><div class="card-tools">
-      <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="acao" value="atualizar_indices"><button class="btn btn-outline-secondary btn-sm" title="Busca o CDI e a Selic no Banco Central. Isso também acontece automaticamente."><i class="fa fa-refresh"></i> Atualizar CDI</button></form>
+      <?php if (usuario_admin_sistema()): ?><form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="acao" value="atualizar_indices"><button class="btn btn-outline-secondary btn-sm" title="Busca o CDI e a Selic no Banco Central. Isso também acontece automaticamente."><i class="fa fa-refresh"></i> Atualizar CDI</button></form><?php endif; ?>
       <a href="#" class="btn btn-success btn-sm" data-modal="modal-aplicar" data-preencher="<?= e(json_encode(['data' => date('Y-m-d'), 'efetivada' => 1])) ?>"><i class="fa fa-arrow-circle-right"></i> Aplicar</a>
       <a href="#" class="btn btn-primary btn-sm" data-modal="modal-inv" data-novo><i class="fa fa-plus"></i> Novo investimento</a>
     </div><?php endif; ?>

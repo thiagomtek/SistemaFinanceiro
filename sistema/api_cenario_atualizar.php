@@ -1,8 +1,9 @@
 <?php
 $API_JSON = true;
 require_once __DIR__ . '/auth_check.php';
+admin_sistema_exigir(true); // gasta rede e cota de IA do servidor: exclusivo do administrador do sistema (RN-52)
 
-// "Atualizar agora": roda a mesma rotina diaria (indicadores, leitura do dia, fechamento mensal, foto do risco). No maximo 1x a cada 30 minutos.
+// "Atualizar agora" (so o administrador do sistema): roda a mesma rotina diaria (indicadores, leitura do dia, fechamento mensal, foto do risco). No maximo 1x a cada 30 minutos.
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_out(['erro' => 'Use POST.'], 405);
 }

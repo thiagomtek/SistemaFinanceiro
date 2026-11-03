@@ -126,6 +126,9 @@ function criar_lancamento_ids(array $d): array
         }
     }
 
+    if ((int) q_val('SELECT COUNT(*) FROM lancamentos WHERE perfil_id = ?', [perfil_id()]) + $qtd > LANCAMENTOS_MAX_POR_PERFIL) {
+        throw new InvalidArgumentException('Limite de ' . number_format(LANCAMENTOS_MAX_POR_PERFIL, 0, ',', '.') . ' lançamentos atingido. Exclua lançamentos antigos para criar novos.');
+    }
     $pdo = db();
     $pdo->beginTransaction();
     try {
@@ -156,6 +159,7 @@ function criar_lancamento_ids(array $d): array
 }
 
 const RECORRENCIA_HORIZONTE_MESES = 24;
+const LANCAMENTOS_MAX_POR_PERFIL = 150000; // teto por perfil: criacao em massa e series fixas nao esgotam banco e CPU do servidor
 const RECORRENCIA_MAX_POR_SERIE = 800;
 
 /**

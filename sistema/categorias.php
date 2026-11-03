@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 q('UPDATE categorias SET nome=?, tipo=?, cor=?, pai_id=? WHERE id=? AND perfil_id=?', [$nome, $tipo, $cor, $pai, $id, perfil_id()]);
                 flash('Categoria atualizada.');
             } else {
+                limite_entidade_exigir('categorias', 'categorias');
                 q_insert('INSERT INTO categorias (perfil_id, nome, tipo, cor, pai_id) VALUES (?,?,?,?,?)', [perfil_id(), $nome, $tipo, $cor, $pai]);
                 flash('Categoria cadastrada.');
             }

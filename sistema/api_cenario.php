@@ -1,6 +1,7 @@
 <?php
 $API_JSON = true;
 require_once __DIR__ . '/auth_check.php';
+limite_exigir_api('cenario', 20, 60); // calculo pesado: limite por usuario (RN-52)
 
 // Tudo da tela "Cenario e risco" numa resposta: indicadores publicos, leitura do dia, risco consolidado do perfil, inflacao
 // percebida, historico de risco e fechamentos mensais.

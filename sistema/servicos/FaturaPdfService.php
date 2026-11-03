@@ -114,6 +114,7 @@ function ia_gemini_json(array $partes, array $esquema, string $chaveObrigatoria,
         $d['_tentativas'] = [];
         return $d;
     }
+    ia_cota_consumir(); // cota diaria por usuario e global (RN-52)
     $chave = fatura_pdf_chave_ia();
     $corpo = json_encode([
         'contents' => [['role' => 'user', 'parts' => $partes]],

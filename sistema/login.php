@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($senha) < 8) {
             $erro = 'Informe nome, e-mail válido e senha com ao menos 8 caracteres.';
         } else {
-            $uid = q_insert('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?,?,?)', [$nome, $email, password_hash($senha, PASSWORD_DEFAULT)]);
+            $uid = q_insert('INSERT INTO usuarios (nome, email, senha_hash, papel, sistema_admin) VALUES (?,?,?,?,?)', [$nome, $email, password_hash($senha, PASSWORD_DEFAULT), 'admin', 1]); // o primeiro usuario e o administrador do sistema
             sessao_reiniciar($manter);
             $_SESSION['usuario_id'] = $uid;
             $_SESSION['usuario_nome'] = $nome;
@@ -23,24 +23,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('index.php');
         }
     } else {
-        $espera = login_bloqueado_por($email);
-        if ($espera > 0) {
-            $erro = 'Muitas tentativas. Tente de novo em ' . (int) ceil($espera / 60) . ' minuto(s).';
+        $r = login_autenticar($email, $senha);
+        if ($r['ok']) {
+            $u = $r['usuario'];
+            q('UPDATE usuarios SET ultimo_acesso = ? WHERE id = ?', [date('Y-m-d H:i:s'), (int) $u['id']]);
+            sessao_reiniciar($manter);
+            $_SESSION['usuario_id'] = (int) $u['id'];
+            $_SESSION['usuario_nome'] = $u['nome'];
+            garantir_perfil();
+            redirect('index.php');
+        } elseif ($r['motivo'] === 'bloqueado') {
+            $erro = 'Muitas tentativas. Tente de novo em ' . (int) ceil($r['espera'] / 60) . ' minuto(s).';
+        } elseif ($r['motivo'] === 'pendente') {
+            $erro = 'Seu cadastro ainda aguarda a aprovação do administrador.';
         } else {
-            $u = q_one('SELECT * FROM usuarios WHERE email = ?', [$email]);
-            // atraso fixo e verificacao mesmo sem usuario: o tempo de resposta nao revela se o e-mail existe
-            usleep(300000);
-            $hashConferido = $u ? (string) $u['senha_hash'] : LOGIN_HASH_FALSO;
-            if (password_verify($senha, $hashConferido) && $u && (int) $u['ativo'] === 1) {
-                login_limpar_falhas($email);
-                q('UPDATE usuarios SET ultimo_acesso = ? WHERE id = ?', [date('Y-m-d H:i:s'), (int) $u['id']]);
-                sessao_reiniciar($manter);
-                $_SESSION['usuario_id'] = (int) $u['id'];
-                $_SESSION['usuario_nome'] = $u['nome'];
-                garantir_perfil();
-                redirect('index.php');
-            }
-            login_registrar_falha($email);
             $erro = 'E-mail ou senha incorretos.';
         }
     }
@@ -79,6 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <small class="text-muted" style="display:block">A sessão não expira e dura para sempre neste aparelho, até você clicar em Sair. Não use em computador compartilhado.</small>
     </div>
     <button class="btn btn-success w-100" type="submit"><i class="fa fa-sign-in"></i> <?= $primeiroAcesso ? 'Criar acesso' : 'Entrar' ?></button>
+    <?php if (!$primeiroAcesso && cadastro_modo() !== 'fechado'): ?>
+      <p style="text-align:center;margin:14px 0 0;font-size:13px">Ainda não tem conta? <a href="cadastro.php"><strong>Criar conta</strong></a></p>
+    <?php endif; ?>
   </form>
 </body>
 </html>

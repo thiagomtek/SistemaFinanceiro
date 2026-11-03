@@ -1,6 +1,7 @@
 <?php
 $API_JSON = true;
 require_once __DIR__ . '/auth_check.php';
+limite_exigir_api('resgate_previa', 60, 60); // calculo pesado: limite por usuario (RN-52)
 
 // Previa de resgate pelo valor LIQUIDO na conta (vazio = total): bruto, IR, IOF (editaveis) e liquido.
 try {

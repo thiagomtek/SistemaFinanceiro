@@ -31,7 +31,7 @@ function igual($a, $b, string $msg, float $tol = 0.01): void
 require __DIR__ . '/mocks_cenario.php';
 cenario_instalar_mocks();
 
-$uid = q_insert('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?,?,?)', ['T', 't@t', 'x']);
+$uid = q_insert('INSERT INTO usuarios (nome, email, senha_hash, ultimo_acesso) VALUES (?,?,?,?)', ['T', 't@t', 'x', date('Y-m-d H:i:s')]); // a rotina diaria so calcula o risco de quem entrou nos ultimos 45 dias
 $_SESSION['usuario_id'] = $uid;
 garantir_perfil();
 $conta = q_insert('INSERT INTO contas (perfil_id, nome, tipo, saldo_inicial) VALUES (?,?,?,?)', [perfil_id(), 'Itaú', 'corrente', 5000]);

@@ -9,6 +9,8 @@ declare(strict_types=1);
    - Papeis: admin (tudo, inclusive usuarios), editor (edita tudo, menos usuarios), leitor (so ve; sem importacoes e usuarios),
      personalizado (matriz escolhida por modulo).
    - A checagem e central (auth_check.php): pagina -> modulo; POST exige "editar".
+   - ADMINISTRADOR UNICO (RN-50): so o usuario com usuarios.sistema_admin = 1 e administrador do sistema. Qualquer outro usuario, mesmo
+     com papel "admin" no banco, e tratado como editor e nunca acessa o modulo "usuarios" nem os gatilhos de recurso do servidor.
    ========================================================================= */
 
 const MODULOS = [
@@ -49,19 +51,44 @@ function permissoes_do_papel(string $papel): array
 /** Matriz efetiva de um usuario. */
 function permissoes_do_usuario(int $uid): array
 {
-    $u = q_one('SELECT papel, ativo FROM usuarios WHERE id = ?', [$uid]);
-    if (!$u || !(int) $u['ativo']) {
+    $u = q_one('SELECT papel, ativo, sistema_admin, aprovacao FROM usuarios WHERE id = ?', [$uid]);
+    if (!$u || !(int) $u['ativo'] || ($u['aprovacao'] ?? 'aprovado') !== 'aprovado') {
         return permissoes_do_papel('nenhum');
     }
-    $m = permissoes_do_papel((string) $u['papel']);
-    if ($u['papel'] === 'personalizado') {
+    $admin = (int) $u['sistema_admin'] === 1;
+    $papel = $admin ? 'admin' : ((string) $u['papel'] === 'admin' ? 'editor' : (string) $u['papel']); // so o administrador do sistema e admin
+    $m = permissoes_do_papel($papel);
+    if ($papel === 'personalizado') {
         foreach (q_all('SELECT modulo, nivel FROM usuario_permissoes WHERE usuario_id = ?', [$uid]) as $r) {
             if (isset($m[$r['modulo']]) && isset(NIVEIS[$r['nivel']])) {
                 $m[$r['modulo']] = $r['nivel'];
             }
         }
     }
+    if (!$admin) {
+        $m['usuarios'] = 'nenhum'; // gestao de usuarios e exclusiva do administrador do sistema
+    }
     return $m;
+}
+
+/** O usuario (padrao: o logado) e o administrador do sistema? Unico com privilegio administrativo. */
+function usuario_admin_sistema(?int $uid = null): bool
+{
+    $uid = $uid ?? (int) usuario_id();
+    return $uid > 0 && (int) q_val('SELECT sistema_admin FROM usuarios WHERE id = ? AND ativo = 1', [$uid]) === 1;
+}
+
+/** Exige o administrador do sistema: JSON 403 em API, redirecionamento com aviso em tela. */
+function admin_sistema_exigir(bool $api = false): void
+{
+    if (usuario_admin_sistema()) {
+        return;
+    }
+    if ($api) {
+        json_out(['erro' => 'Somente o administrador do sistema pode fazer isso.'], 403);
+    }
+    flash('Somente o administrador do sistema pode fazer isso.', 'danger');
+    redirect(pagina_inicial_permitida());
 }
 
 function permissao_nivel(string $modulo): string
@@ -154,6 +181,9 @@ function usuario_salvar(array $d, int $id, int $donoId): int
     if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         throw new InvalidArgumentException('Informe nome e um e-mail válido.');
     }
+    if ($papel === 'admin' && !usuario_admin_sistema($id)) {
+        throw new InvalidArgumentException('Somente o administrador do sistema pode ter o papel de administrador.');
+    }
     if ($id === 0 && strlen($senha) < 8) {
         throw new InvalidArgumentException('A senha deve ter ao menos 8 caracteres.');
     }
@@ -167,6 +197,9 @@ function usuario_salvar(array $d, int $id, int $donoId): int
         $atual = q_one('SELECT * FROM usuarios WHERE id = ? AND (dono_id = ? OR (dono_id IS NULL AND id = ?))', [$id, $donoId, $donoId]);
         if (!$atual) {
             throw new InvalidArgumentException('Usuário não encontrado.');
+        }
+        if ((int) $atual['sistema_admin'] === 1 && ($papel !== 'admin' || !$ativo)) {
+            throw new InvalidArgumentException('O administrador do sistema não pode perder o papel nem ser inativado.');
         }
         // nao deixa o sistema sem administrador ativo
         $viraraNaoAdmin = $atual['papel'] === 'admin' && (int) $atual['ativo'] === 1 && ($papel !== 'admin' || !$ativo);
@@ -184,6 +217,9 @@ function usuario_salvar(array $d, int $id, int $donoId): int
     q('DELETE FROM usuario_permissoes WHERE usuario_id = ?', [$id]);
     if ($papel === 'personalizado') {
         foreach (array_keys(MODULOS) as $mod) {
+            if ($mod === 'usuarios') {
+                continue; // nunca concedido a outro usuario
+            }
             $n = (string) ($d['permissoes'][$mod] ?? 'nenhum');
             if (isset(NIVEIS[$n]) && $n !== 'nenhum') {
                 q_insert('INSERT INTO usuario_permissoes (usuario_id, modulo, nivel) VALUES (?,?,?)', [$id, $mod, $n]);
@@ -201,6 +237,9 @@ function usuario_excluir(int $id, int $donoId, int $eu): void
     }
     if ($id === $eu) {
         throw new InvalidArgumentException('Você não pode excluir o próprio usuário.');
+    }
+    if ((int) $u['sistema_admin'] === 1) {
+        throw new InvalidArgumentException('O administrador do sistema não pode ser excluído.');
     }
     if ($u['papel'] === 'admin' && (int) $u['ativo'] === 1 && admins_ativos($id, $donoId) < 1) {
         throw new InvalidArgumentException('É preciso manter ao menos um administrador ativo.');
@@ -251,8 +290,7 @@ const LOGIN_JANELA_S = 900;
 /** Chave da tentativa: e-mail + IP do cliente (o Caddy troca o X-Forwarded-For, entao o primeiro valor e o do cliente). */
 function login_chave(string $email): string
 {
-    $ip = trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''))[0]) ?: (string) ($_SERVER['REMOTE_ADDR'] ?? '');
-    return 'lf:' . sha1(mb_strtolower($email) . '|' . $ip);
+    return 'lf:' . sha1(mb_strtolower($email) . '|' . cliente_ip());
 }
 
 /** Segundos que faltam para poder tentar de novo (0 = liberado). */
@@ -296,4 +334,34 @@ function login_registrar_falha(string $email, ?int $agora = null): void
 function login_limpar_falhas(string $email): void
 {
     q('DELETE FROM parametros WHERE chave = ?', [login_chave($email)]);
+}
+
+const LOGIN_MAX_FALHAS_IP = 30; // falhas de qualquer e-mail vindas do mesmo IP na janela (barra a "pulverizacao" de senhas)
+
+/**
+ * Autentica e-mail e senha. Devolve ['ok' => true, 'usuario' => linha] ou ['ok' => false, 'motivo' => bloqueado|pendente|incorreto, 'espera' => s].
+ * Bloqueia por e-mail+IP (5 falhas) e por IP (30 falhas) em 15 minutos; o tempo de resposta e igual com e sem conta; conta recusada ou
+ * inativa responde como senha incorreta; so uma conta pendente com senha certa e avisada (nao e contada como falha).
+ */
+function login_autenticar(string $email, string $senha): array
+{
+    $email = mb_strtolower(trim($email));
+    $ip = cliente_ip();
+    $espera = max(login_bloqueado_por($email), limite_bloqueado_por('login-ip:' . $ip, LOGIN_MAX_FALHAS_IP, LOGIN_JANELA_S));
+    if ($espera > 0) {
+        return ['ok' => false, 'motivo' => 'bloqueado', 'espera' => $espera];
+    }
+    $u = $email !== '' ? q_one('SELECT * FROM usuarios WHERE email = ?', [$email]) : null;
+    usleep(300000); // atraso fixo e verificacao mesmo sem usuario
+    $senhaOk = password_verify($senha, $u ? (string) $u['senha_hash'] : LOGIN_HASH_FALSO) && $u;
+    if ($senhaOk && (int) $u['ativo'] === 1 && ($u['aprovacao'] ?? 'aprovado') === 'aprovado') {
+        login_limpar_falhas($email);
+        return ['ok' => true, 'usuario' => $u];
+    }
+    if ($senhaOk && ($u['aprovacao'] ?? '') === 'pendente') {
+        return ['ok' => false, 'motivo' => 'pendente', 'espera' => 0];
+    }
+    login_registrar_falha($email);
+    limite_consumir('login-ip:' . $ip, LOGIN_MAX_FALHAS_IP, LOGIN_JANELA_S);
+    return ['ok' => false, 'motivo' => 'incorreto', 'espera' => 0];
 }

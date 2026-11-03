@@ -10,6 +10,7 @@ const ANEXO_TIPOS = [
     'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 const ANEXO_MAX_BYTES = 5 * 1024 * 1024;
+const ANEXO_MAX_TOTAL_BYTES = 200 * 1024 * 1024; // por perfil
 
 function anexos_dir(): string
 {
@@ -27,6 +28,9 @@ function anexar_arquivo(int $lancamento_id, array $f): int
     }
     if ($f['size'] > ANEXO_MAX_BYTES) {
         throw new InvalidArgumentException('Anexo muito grande (limite de 5 MB).');
+    }
+    if ((int) q_val('SELECT COALESCE(SUM(tamanho), 0) FROM anexos WHERE perfil_id = ?', [perfil_id()]) + (int) $f['size'] > ANEXO_MAX_TOTAL_BYTES) {
+        throw new InvalidArgumentException('O limite de ' . (ANEXO_MAX_TOTAL_BYTES / 1048576) . ' MB de anexos foi atingido. Exclua anexos antigos.');
     }
     $ext = strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION));
     if (!isset(ANEXO_TIPOS[$ext])) {

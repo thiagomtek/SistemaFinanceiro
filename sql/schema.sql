@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
   papel VARCHAR(14) NOT NULL DEFAULT 'admin' COMMENT 'admin | editor | leitor | personalizado',
   ativo TINYINT(1) NOT NULL DEFAULT 1,
   dono_id INT UNSIGNED NULL COMMENT 'usuario dono dos dados compartilhados',
+  sistema_admin TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'unico administrador do sistema (1 = sim)',
+  cadastro VARCHAR(10) NOT NULL DEFAULT 'admin' COMMENT 'admin | publico',
+  aprovacao VARCHAR(10) NOT NULL DEFAULT 'aprovado' COMMENT 'aprovado | pendente | recusado',
+  aprovado_em DATETIME NULL,
   ultimo_acesso DATETIME NULL,
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

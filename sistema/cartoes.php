@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 flash('Cartão atualizado. Compras comuns de faturas em aberto foram reclassificadas.');
             } else {
+                limite_entidade_exigir('cartoes', 'cartões');
                 q_insert('INSERT INTO cartoes (perfil_id, nome, limite, dia_fechamento, dia_vencimento, conta_pagamento_id) VALUES (?,?,?,?,?,?)', [perfil_id(), $nome, $limite, $fech, $venc, $conta]);
                 flash('Cartão cadastrado.');
             }

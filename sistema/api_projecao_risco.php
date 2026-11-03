@@ -1,6 +1,7 @@
 <?php
 $API_JSON = true;
 require_once __DIR__ . '/auth_check.php';
+limite_exigir_api('projecao_risco', 20, 60); // calculo pesado: limite por usuario (RN-52)
 
 $meses = (int) ($_GET['meses'] ?? 12);
 $media = ($_GET['media'] ?? '1') === '1';

@@ -14,6 +14,8 @@ const IDX_CDI_DIA = '12';
 const IDX_CDI_ANUAL = '4389';
 const IDX_SELIC = '432';
 const IDX_INTERVALO_TENTATIVA_S = 4 * 3600;
+const IDX_INTERVALO_FALTA_S = 600; // com historico faltando, tenta de novo no maximo a cada 10 min (nunca a cada pagina)
+const IDX_DATA_MINIMA = '1995-01-01'; // antes disso a serie do CDI do BCB nao e usada: datas mais antigas nao disparam busca
 
 // ------------------------------------------------------------------ calendario
 
@@ -155,7 +157,7 @@ function indices_ultimo(string $serie): ?array
 function indices_inicio_necessario(): string
 {
     $min = q_val("SELECT MIN(m.data) FROM investimento_movs m JOIN investimentos i ON i.id = m.investimento_id WHERE i.indexador = 'cdi'");
-    return $min ? (string) $min : date('Y-m-d', strtotime('-40 day'));
+    return max($min ? (string) $min : date('Y-m-d', strtotime('-40 day')), IDX_DATA_MINIMA);
 }
 
 /**
@@ -175,7 +177,8 @@ function indices_atualizar(bool $forcar = false): array
     if (!$forcar && !$faltaHistorico && !$defasado) {
         return ['atualizado' => false, 'mensagem' => 'Índices em dia.', 'cdi_anual' => cdi_anual_atual(), 'ultima_data' => (string) $maxCdi];
     }
-    if (!$forcar && !$faltaHistorico && ($agora - $ultimaTent) < IDX_INTERVALO_TENTATIVA_S) {
+    // mesmo com o historico faltando, respeita o intervalo: antes, uma data antiga demais fazia cada pagina consultar o BCB (ate 3 x 25 s)
+    if (!$forcar && ($agora - $ultimaTent) < ($faltaHistorico ? IDX_INTERVALO_FALTA_S : IDX_INTERVALO_TENTATIVA_S)) {
         return ['atualizado' => false, 'mensagem' => 'Última tentativa recente; aguardando para tentar de novo.', 'cdi_anual' => cdi_anual_atual(), 'ultima_data' => (string) $maxCdi];
     }
     parametro_set('idx_tentativa', (string) $agora);
@@ -220,10 +223,15 @@ function indices_garantir(): void
 /** Garante o CDI diario no banco desde $desde (para posicoes iniciais antigas). Nunca lanca excecao. */
 function indices_garantir_desde(string $desde): void
 {
+    $desde = max($desde, IDX_DATA_MINIMA);
     $min = q_val('SELECT MIN(data) FROM indices WHERE serie = ?', [IDX_CDI_DIA]);
     if ($min && $min <= date('Y-m-d', strtotime($desde . ' +7 day'))) {
         return;
     }
+    if (time() - (int) (parametro_get('idx_desde_tentativa') ?? 0) < IDX_INTERVALO_FALTA_S) {
+        return;
+    }
+    parametro_set('idx_desde_tentativa', (string) time());
     try {
         $hoje = date('Y-m-d');
         $ini = $desde;

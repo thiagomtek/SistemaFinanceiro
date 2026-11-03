@@ -7,6 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_out(['erro' => 'Use POST.'], 405);
 }
 csrf_exigir();
+limite_exigir_api('cenario_perfil', 20, 60);
 $d = json_decode((string) ($_POST['dados'] ?? ''), true);
 if (!is_array($d)) {
     json_out(['erro' => 'Dados inválidos.'], 422);

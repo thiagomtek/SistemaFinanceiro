@@ -681,3 +681,27 @@ Pendências / ressalvas:
 - O resumo do Gemini veio uma vez sem acentos; o prompt agora pede acentuação correta.
 - Não conferido com a sessão real do usuário.
 
+## v1.18.0 — cadastro público, administrador único e segurança (RN-50 a RN-53) (build 20261103.12) — 03/11/2026 15:54
+
+**Status: validada com ressalvas.**
+
+Arquivos novos: `sistema/servicos/LimiteService.php`, `sistema/servicos/CadastroPublicoService.php`, `sistema/cadastro.php`, `sql/alteracoes/20261103_cadastro_publico.sql`, `tools/ci/testes_seguranca.php`. Alterados: `PermissaoService.php`, `login.php`, `usuarios.php`, `bootstrap.php`, `api_cenario_atualizar.php`, `investimentos.php`, `IndiceService.php`, `RendaFixaService.php`, `InvestimentoService.php`, `CadastroService.php`, `LancamentoService.php`, `AnexoService.php`, `FaturaPdfService.php`, `ImportacaoService.php`, `RiscoService.php`, `contas.php`, `cartoes.php`, `categorias.php`, `api_projecao.php`, `api_projecao_risco.php`, `api_cenario.php`, `api_cenario_perfil.php`, `api_investimento_painel.php`, `api_resgate_previa.php`, `api_push.php`, `sql/schema.sql`, testes de usuários e de cenário, documentação, `config_versao.php`, `config_novidades.php`.
+
+Decisões do Thiago: cadastro de novos usuários na página inicial com segurança; permissões e nenhuma exposição de dados; usuários não acionam o que gasta recursos do servidor; **o único usuário com privilégio administrativo é o dele**. Decisões de desenho minhas: modo padrão com aprovação; contas novas sem importação por IA (libera caso a caso); sem recuperação de senha por e-mail; modo "aberto" disponível, mas sem verificação de e-mail.
+
+Verificado:
+- Todos os conjuntos de testes no PHP 7.4 passaram, incluindo o novo `testes_seguranca.php`, que cobre administrador único (papel `admin` adulterado no banco, permissão de usuários gravada à mão, criação e promoção recusadas, administrador inativo), cadastro (modos, isca, tempo, limites por IP e teto diário, validações de nome, e-mail e senha, resposta igual para e-mail existente, permissões padrão, senha com hash), login (pendente, bloqueio por e-mail e por IP, conta recusada ou inativa), aprovação (só o administrador, recusa, exclusão, importação por IA, lista sem dado financeiro), **isolamento entre dois usuários** (mais de 30 tentativas de um usuário nos dados do outro, e listas, saldo, projeção e exposição sem vazamento), limites (janela, IP, IA por usuário e global, anexos, itens por perfil, movimentos, lançamentos, datas, intervalo da busca no Banco Central e a rotina diária só para quem usa) e regressão estática dos gatilhos.
+- **Teste de mutação:** removi de propósito quatro travas (posse em `alternar_efetivado`, `anexo_dados` e `rf_investimento`, e o bloqueio do módulo de usuários) e o teste falhou em cada uma; as travas foram restauradas.
+- Os testes encontraram defeitos meus, corrigidos: toda tentativa, inclusive com erro de digitação, gastava a cota de 3 cadastros por hora do IP (agora só conta envio válido, com limite geral folgado à parte); e o teste de teto de lançamentos estourava a memória por comparar inteiro com texto no SQLite.
+- Achado que já existia: `indices_garantir()` rodava a cada página, e uma data de aplicação anterior à série do CDI (por exemplo 1900) fazia **cada visita consultar o Banco Central** (até 3 tentativas de 25 s). Corrigido com validação de datas (1995 a 10 anos à frente) e intervalo na busca.
+- **Migração validada no MariaDB 10.5 descartável**: com o dono + um segundo `admin` antigo + um editor com permissão de usuários antiga (o segundo `admin` virou editor e a permissão foi removida), segunda execução sem erro, schema novo do zero e banco vazio.
+- Em produção há um único usuário (o administrador, `id 1`); a migração o marca como administrador do sistema.
+
+Pendências / ressalvas:
+- **Não aplicado em produção**: precisa de backup do banco, aplicar `sql/alteracoes/20261103_cadastro_publico.sql` **antes** de publicar o código, e trocar o `fin_app`.
+- Navegador (instância local descartável, PHP 7.4, SQLite): cadastro enviado na página pública (campo isca fora da tela, aviso de aprovação, mensagem de recebimento); a conta pendente tentando entrar recebeu "aguarda a aprovação"; o painel do administrador listou o pedido, mostrou o modo e o limite e a opção "Administrador" ficou desabilitada no formulário de usuário; depois de aprovada, a conta comum entrou e **não tinha** Usuários nem Importações no menu, `usuarios.php` e as importações redirecionaram, "Atualizar agora" devolveu 403, a atualização manual de índices foi recusada (e o botão não aparece), e quem está logado é redirecionado para fora do cadastro. O botão "Atualizar agora" ainda aparecia para a conta comum e passou a ser escondido (a API já recusava). Não foi conferido com a sessão real do usuário em produção.
+- Não há verificação de e-mail nem recuperação de senha por e-mail; o administrador não redefine senhas de outros (de propósito). Quem administra o servidor tem acesso técnico aos dados no banco.
+- Limites por IP valem para quem está atrás do mesmo endereço; o teto diário global de cadastros pode ser consumido por um atacante com vários IPs.
+- Sem política CSP (as telas usam scripts embutidos); HSTS cabe ao Caddy.
+- Revisão de isolamento foi feita por leitura das consultas e por teste das funções de serviço; as páginas (formulários) seguem o mesmo padrão `pertence_ao_perfil`, mas não há teste de ponta a ponta de cada formulário.
+

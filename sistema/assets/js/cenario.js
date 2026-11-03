@@ -243,6 +243,7 @@
       .catch(function (e) { $('c-carregando').innerHTML = '<div class="alert alert-danger">Não foi possível carregar o cenário (' + escapeHtml(e.message) + ').</div>'; });
   }
 
+  if ($('c-atualizar')) { // so o administrador do sistema tem o botao (a API tambem recusa os demais)
   $('c-atualizar').addEventListener('click', function () {
     var b = this;
     b.disabled = true;
@@ -260,6 +261,7 @@
       .catch(function (e) { ERP.toast.show('Falha ao atualizar: ' + e.message, 'error'); })
       .then(function () { b.disabled = false; b.innerHTML = '<i class="fa fa-refresh"></i> Atualizar agora'; });
   });
+  }
 
   carregar();
 })();

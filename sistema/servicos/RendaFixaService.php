@@ -310,6 +310,24 @@ function rf_exigir_conta_bancaria(int $contaId): void
     }
 }
 
+const RF_MAX_MOVS = 5000; // movimentos por investimento
+
+/** Data de movimento aceita: de 1995 (inicio do uso da serie do CDI) ate 10 anos a frente. @throws InvalidArgumentException */
+function rf_validar_data(string $d): void
+{
+    if ($d < IDX_DATA_MINIMA || $d > date('Y-m-d', strtotime('+10 year'))) {
+        throw new InvalidArgumentException('Data fora do intervalo aceito (de 01/01/1995 até 10 anos à frente).');
+    }
+}
+
+/** @throws InvalidArgumentException quando o investimento ja tem o maximo de movimentos */
+function rf_exigir_espaco_mov(int $invId): void
+{
+    if ((int) q_val('SELECT COUNT(*) FROM investimento_movs WHERE investimento_id = ?', [$invId]) >= RF_MAX_MOVS) {
+        throw new InvalidArgumentException('Este investimento atingiu o limite de ' . RF_MAX_MOVS . ' movimentações.');
+    }
+}
+
 function rf_investimento(int $id, bool $exigirAtivo = false): array
 {
     $inv = q_one('SELECT * FROM investimentos WHERE id = ? AND perfil_id = ?', [$id, perfil_id()]);
@@ -332,6 +350,8 @@ function rf_aplicar(int $contaId, int $invId, $valor, string $data, bool $efetiv
     if ($v <= 0 || !$d) {
         throw new InvalidArgumentException('Informe valor e data válidos.');
     }
+    rf_validar_data($d);
+    rf_exigir_espaco_mov($invId);
     $pdo = db();
     $pdo->beginTransaction();
     try {
@@ -362,6 +382,7 @@ function rf_previa_resgate(int $invId, $valor, string $data): array
     if (!$d) {
         throw new InvalidArgumentException('Data inválida.');
     }
+    rf_validar_data($d);
     indices_garantir();
     $s = rf_simular($inv, rf_movs($invId), $d);
     $saldo = round($s['saldo_bruto'], 2);
@@ -389,6 +410,7 @@ function rf_previa_resgate(int $invId, $valor, string $data): array
 /** Grava o resgate (lancamento na conta com o LIQUIDO + movimento do investimento com bruto, IR e IOF). */
 function rf_gravar_resgate(array $inv, int $contaId, array $p, bool $efetivada, string $obs): array
 {
+    rf_exigir_espaco_mov((int) $inv['id']);
     $pdo = db();
     $pdo->beginTransaction();
     try {
@@ -541,6 +563,8 @@ function rf_reajustar(int $invId, $saldoReal, string $data, string $obs = '', st
     if (!$d || $real < 0) {
         throw new InvalidArgumentException('Informe um saldo e uma data válidos.');
     }
+    rf_validar_data($d);
+    rf_exigir_espaco_mov($invId);
     if (!in_array($base, ['bruto', 'liquido'], true)) {
         throw new InvalidArgumentException('Informe se o saldo é bruto ou líquido.');
     }

@@ -29,7 +29,7 @@ function lanca(callable $f, string $msg): void
     }
 }
 
-$admin = q_insert('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?,?,?)', ['Admin', 'admin@t.t', password_hash('senhaadmin1', PASSWORD_DEFAULT)]);
+$admin = q_insert('INSERT INTO usuarios (nome, email, senha_hash, papel, sistema_admin) VALUES (?,?,?,?,?)', ['Admin', 'admin@t.t', password_hash('senhaadmin1', PASSWORD_DEFAULT), 'admin', 1]); // o administrador do sistema
 $_SESSION['usuario_id'] = $admin;
 garantir_perfil();
 $perfilAdmin = perfil_id();
@@ -65,10 +65,11 @@ lanca(function () use ($admin) { usuario_salvar(['nome' => 'X', 'email' => 'inva
 echo "== sempre um administrador ativo\n";
 lanca(function () use ($admin) { usuario_salvar(['nome' => 'Admin', 'email' => 'admin@t.t', 'papel' => 'leitor'], $admin, $admin); }, 'o único administrador não pode virar leitor');
 lanca(function () use ($admin) { usuario_excluir($admin, $admin, $admin); }, 'não se exclui o próprio usuário');
-$admin2 = usuario_salvar(['nome' => 'Admin 2', 'email' => 'admin2@t.t', 'senha' => 'senhaadmin2', 'papel' => 'admin'], 0, $admin);
-usuario_salvar(['nome' => 'Admin 2', 'email' => 'admin2@t.t', 'papel' => 'editor'], $admin2, $admin);
-ok(q_val('SELECT papel FROM usuarios WHERE id = ?', [$admin2]) === 'editor', 'com outro administrador ativo, dá para rebaixar');
-lanca(function () use ($admin, $admin2) { usuario_excluir($admin, $admin2, $admin2); }, 'o dono dos dados não é excluído');
+lanca(function () use ($admin) { usuario_salvar(['nome' => 'Admin 2', 'email' => 'admin2@t.t', 'senha' => 'senhaadmin2', 'papel' => 'admin'], 0, $admin); }, 'RN-50: nenhum outro usuário pode ser criado como administrador');
+$admin2 = usuario_salvar(['nome' => 'Admin 2', 'email' => 'admin2@t.t', 'senha' => 'senhaadmin2', 'papel' => 'editor'], 0, $admin);
+lanca(function () use ($admin, $admin2) { usuario_salvar(['nome' => 'Admin 2', 'email' => 'admin2@t.t', 'papel' => 'admin'], $admin2, $admin); }, 'RN-50: promover um usuário existente a administrador também é recusado');
+lanca(function () use ($admin, $admin2) { usuario_excluir($admin, $admin2, $admin2); }, 'o administrador do sistema (dono dos dados) não é excluído');
+lanca(function () use ($admin) { usuario_salvar(['nome' => 'Admin', 'email' => 'admin@t.t', 'papel' => 'editor'], $admin, $admin); }, 'o administrador do sistema não perde o papel');
 usuario_excluir($custom, $admin, $admin);
 ok(!q_val('SELECT id FROM usuarios WHERE id = ?', [$custom]), 'usuário comum é excluído (e as permissões junto)');
 ok((int) q_val('SELECT COUNT(*) FROM usuario_permissoes WHERE usuario_id = ?', [$custom]) === 0, 'sem permissões órfãs');

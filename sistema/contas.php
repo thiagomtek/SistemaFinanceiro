@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 q('UPDATE contas SET nome=?, tipo=?, saldo_inicial=? WHERE id=? AND perfil_id=?', [$nome, $tipo, $saldo, $id, perfil_id()]);
                 flash('Conta atualizada.');
             } else {
+                limite_entidade_exigir('contas', 'contas');
                 q_insert('INSERT INTO contas (perfil_id, nome, tipo, saldo_inicial) VALUES (?,?,?,?)', [perfil_id(), $nome, $tipo, $saldo]);
                 flash('Conta cadastrada.');
             }

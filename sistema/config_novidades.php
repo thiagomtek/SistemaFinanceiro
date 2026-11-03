@@ -11,6 +11,23 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.18.0', 'build' => '20261103.12', 'data' => '03/11/2026', 'hora' => '15:54',
+                'titulo' => 'Cadastro de novos usuários na tela de entrada, com segurança',
+                'destaque' => 'A tela de entrada ganhou "Criar conta". Cada pessoa cadastrada tem dados próprios e isolados, e só o administrador do sistema aprova, administra e aciona o que gasta recursos do servidor.',
+                'categorias' => array(
+                    array('nome' => 'Novidades', 'icone' => 'fa-star', 'cor' => '#16a34a', 'itens' => array(
+                        array('titulo' => 'Criar conta', 'descricao' => 'Página pública de cadastro com três modos definidos pelo administrador (fechado, com aprovação ou aberto), campo isca contra robôs, tempo mínimo de preenchimento, limite por endereço IP, teto diário e senha forte. O padrão é com aprovação.'),
+                        array('titulo' => 'Administrador único', 'descricao' => 'Só o seu usuário tem privilégio administrativo. Ninguém mais pode ser administrador nem abrir Usuários e permissões, mesmo que o banco diga o contrário. Quem se cadastra nasce sem importação por IA, que você libera caso a caso.'),
+                        array('titulo' => 'Aprovação de cadastros', 'descricao' => 'Em Usuários e permissões, o painel Cadastro público mostra quem aguarda, aprova ou recusa, libera a importação por IA, inativa ou reativa e define o modo e o limite diário. A lista não mostra nenhum dado financeiro.'),
+                    )),
+                    array('nome' => 'Segurança', 'icone' => 'fa-lock', 'cor' => '#dc2626', 'itens' => array(
+                        array('titulo' => 'Gatilhos de recurso só para o administrador', 'descricao' => '"Atualizar agora" do cenário e a atualização manual de índices exigem o administrador do sistema. Leituras por IA têm cota diária por usuário e global; telas de cálculo pesado têm limite de uso por usuário; há tetos de contas, cartões, investimentos, movimentações, lançamentos e anexos por perfil.'),
+                        array('titulo' => 'Consulta ao Banco Central a cada página', 'descricao' => 'Uma data de aplicação muito antiga fazia cada página consultar o Banco Central (até 3 tentativas de 25 s). Agora datas fora de 1995 até 10 anos à frente são recusadas e a busca respeita um intervalo.'),
+                        array('titulo' => 'Login mais firme', 'descricao' => 'Além do bloqueio por e-mail e IP, um endereço com 30 falhas em e-mails diferentes é bloqueado, e conta pendente, recusada ou inativa não revela a situação a quem erra a senha.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.17.1', 'build' => '20261103.11', 'data' => '03/11/2026', 'hora' => '15:06',
                 'titulo' => 'Notícias do cenário: só fontes confiáveis, do Brasil e de economia',
                 'destaque' => 'A leitura diária das notícias passou a recusar portais de fofoca e pouco confiáveis, matérias de outros países em temas do Brasil e assuntos que não são de economia.',

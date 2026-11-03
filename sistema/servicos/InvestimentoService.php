@@ -240,6 +240,7 @@ function investimento_salvar(array $d, int $id = 0): int
             [$nome, $tipo, $inst, $taxa, $indexador, $pct, $trib, $venc, $liq, $moeda, $id, perfil_id()]);
         return $id;
     }
+    limite_entidade_exigir('investimentos', 'investimentos');
     return q_insert('INSERT INTO investimentos (perfil_id, nome, tipo, instituicao, taxa_anual, indexador, percentual_cdi, tributacao, data_vencimento, liquidez, moeda) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
         [perfil_id(), $nome, $tipo, $inst, $taxa, $indexador, $pct, $trib, $venc, $liq, $moeda]);
 }

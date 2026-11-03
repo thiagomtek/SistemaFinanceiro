@@ -390,7 +390,7 @@ function risco_snapshot_todos(?string $hoje = null): array
 {
     $guarda = $_SESSION;
     $out = [];
-    foreach (q_all('SELECT p.id AS pid, p.usuario_id AS uid FROM perfis p INNER JOIN usuarios u ON u.id = p.usuario_id WHERE u.ativo = 1 ORDER BY p.id') as $r) {
+    foreach (q_all('SELECT p.id AS pid, p.usuario_id AS uid FROM perfis p INNER JOIN usuarios u ON u.id = p.usuario_id WHERE u.ativo = 1 AND (u.sistema_admin = 1 OR u.ultimo_acesso >= ?) ORDER BY p.id LIMIT 200', [date('Y-m-d', strtotime('-45 day'))]) as $r) { // so quem entrou nos ultimos 45 dias: o custo diario nao cresce com contas paradas
         $_SESSION = ['usuario_id' => (int) $r['uid'], 'perfil_id' => (int) $r['pid']];
         try {
             $out[] = risco_snapshot_salvar($hoje);

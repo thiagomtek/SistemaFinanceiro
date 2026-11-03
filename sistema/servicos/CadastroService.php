@@ -24,6 +24,18 @@ function categorias_do_perfil(?string $tipo = null): array
     return q_all($sql . ' ORDER BY c.tipo, COALESCE(p.nome, c.nome), c.pai_id IS NOT NULL, c.nome', $par);
 }
 
+/** Teto de itens por perfil (evita que um usuario esgote disco e CPU criando registros sem fim). */
+const CADASTRO_LIMITES = ['contas' => 50, 'cartoes' => 40, 'categorias' => 300, 'investimentos' => 60];
+
+/** @throws InvalidArgumentException quando o perfil ja tem o maximo de itens da tabela */
+function limite_entidade_exigir(string $tabela, string $rotulo): void
+{
+    $max = CADASTRO_LIMITES[$tabela] ?? 0;
+    if ($max > 0 && (int) q_val("SELECT COUNT(*) FROM $tabela WHERE perfil_id = ?", [perfil_id()]) >= $max) {
+        throw new InvalidArgumentException('Limite de ' . $max . ' ' . $rotulo . ' atingido. Exclua ou inative algum antes de criar outro.');
+    }
+}
+
 function pertence_ao_perfil(string $tabela, ?int $id): bool
 {
     if (!$id) {
