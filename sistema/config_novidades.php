@@ -25,6 +25,14 @@ if (!function_exists('sistema_obter_novidades')) {
                 ),
             ),
             array(
+                'versao' => '1.13.8', 'build' => '20261101.1', 'data' => '01/11/2026', 'hora' => '11:23',
+                'titulo' => 'Notificações identificadas por aplicativo',
+                'destaque' => 'Os avisos mostram o nome do aplicativo e abrem seu endereço com a porta correta.',
+                'categorias' => array(array('nome' => 'Aplicativo e notificações', 'icone' => 'fa-mobile', 'cor' => '#2563eb', 'itens' => array(
+                    array('titulo' => 'Avisos separados', 'descricao' => 'Nome, símbolo e destino pertencem a este aplicativo. No Android, desative Abrir links compatíveis para evitar que um PWA capture páginas de outros serviços do mesmo domínio.'),
+                ))),
+            ),
+            array(
                 'versao' => '1.13.7', 'build' => '20261031.5', 'data' => '31/10/2026', 'hora' => '16:39',
                 'titulo' => 'Lotes e movimentações dentro do painel do investimento',
                 'destaque' => 'Os lotes, a projeção de 12 meses e o histórico de movimentações agora abrem no próprio painel do investimento, sem sair da lista.',

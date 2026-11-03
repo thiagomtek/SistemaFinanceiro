@@ -463,6 +463,22 @@ Pendências / ressalvas:
 
 **Publicação das v1.13.6 e v1.13.7 (31/10/2026, ~16:45):** a VM estava na 1.13.5; foram enviados juntos o CSS dos títulos de KPI (v1.13.6) e os arquivos desta versão. Tag de reversão `sistema-financeiro-fin_app:rollback-1.13.5`, build do `fin_app`, `php -l` nos três PHP alterados, troca só do `fin_app` com `--no-deps` (`fin_db` seguiu healthy). Pelo Caddy: login 200, `api_investimento_painel.php` sem sessão 401, `inv_painel.js` 200. Sem alteração de banco. Tela autenticada não vista.
 
+## v1.13.8 — PWA e notificações identificados por aplicativo (build 20261101.1) — 01/11/2026
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/assets/js/app.js`, `sistema/sw.php`, `sistema/manifest.php`, `sistema/assets/icons/notification-badge.png`, `sistema/config_versao.php`, `sistema/config_novidades.php`.
+
+Origem: esta versão foi feita e publicada direto na VM (junto com ajustes no ERP, no Instagram Tracker e no Hub) e **não foi commitada na época**; foi recuperada da cópia de implantação e incorporada ao repositório em 03/11/2026, junto da v1.14.0. O relatório completo e original está em `PWA_E_NOTIFICACOES_20261101.md` (cobre os quatro aplicativos).
+
+Comportamento: o service worker e o registro passam a usar a origem completa com porta (`https://servidor.tail074692.ts.net:8453/sistema/`); a notificação mostra "Sistema Financeiro · título", ícone e símbolo monocromático próprios, e o clique só reutiliza janela da mesma origem/escopo, recusando outras portas, domínios, credenciais embutidas e URLs inválidas. O manifesto usa o caminho absoluto. Sem alteração de regra de negócio, de banco ou de assinaturas.
+
+Verificado (segundo o relatório da época): 56 cenários de service worker em sandbox, sintaxe PHP, testes de domínio do Financeiro, Chromium real carregando os workers publicados e eventos push sintéticos; login do Financeiro inspecionado na versão 1.13.8.
+
+Pendências / ressalvas:
+- A origem `https://servidor.tail074692.ts.net:8453` está fixa em `app.js`, `sw.php` e `manifest.php`: em outro host ou ambiente local o registro do service worker e as notificações não funcionam. Candidata a configuração.
+- Não validado no celular: nome, ícone e canal exibidos pelo Android, entrega FCM e clique físico. Limitação do Android (filtro de links sem porta): desativar "Abrir links compatíveis" em cada PWA.
+
 ## v1.14.0 — fatura importada manda nas faturas seguintes (build 20261103.1) — 03/11/2026
 
 **Status: validada com ressalvas.**

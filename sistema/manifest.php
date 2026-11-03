@@ -4,7 +4,7 @@ define('FIN_SEM_SESSAO', true); // sem sessao: nao cria arquivo de sessao nem co
 require_once __DIR__ . '/bootstrap.php';
 header('Content-Type: application/manifest+json; charset=utf-8');
 header('Cache-Control: no-cache');
-$base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') . '/';
+$base = 'https://servidor.tail074692.ts.net:8453/sistema/';
 echo json_encode([
     'id' => $base . '?app=sistema-financeiro',
     'name' => 'Sistema Financeiro',

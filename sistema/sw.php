@@ -46,28 +46,55 @@ self.addEventListener('fetch', function (e) {
 });
 
 // Web Push: o servidor envia {titulo, mensagem, url (relativa a /sistema/), tag}. Origem e escopo proprios (porta 8453): nao se mistura com o ERP.
-self.addEventListener('push', function (e) {
-  var d = {};
-  try { d = e.data ? e.data.json() : {}; } catch (x) { d = { mensagem: e.data ? e.data.text() : '' }; }
-  var alvo = new URL(BASE + 'index.php');
-  try {
-    var u = new URL(String(d.url || ''), BASE);
-    if (u.origin === alvo.origin && u.pathname.indexOf(new URL(BASE).pathname) === 0) { alvo = u; }
-  } catch (x) {}
-  e.waitUntil(self.registration.showNotification(String(d.titulo || 'Sistema Financeiro'), {
-    body: String(d.mensagem || 'Há um novo aviso no Sistema Financeiro.'),
-    icon: BASE + 'assets/icons/icon-192.png',
-    badge: BASE + 'assets/icons/icon-192.png',
-    tag: String(d.tag || 'fin-aviso'),
-    data: { url: alvo.href }
-  }));
-});
 
-self.addEventListener('notificationclick', function (e) {
-  e.notification.close();
-  var alvo = (e.notification.data && e.notification.data.url) || (BASE + 'index.php');
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (cs) {
-    for (var i = 0; i < cs.length; i++) { if (cs[i].url.indexOf(BASE) === 0 && 'focus' in cs[i]) { cs[i].navigate(alvo); return cs[i].focus(); } }
-    return self.clients.openWindow(alvo);
-  }));
+// A identidade inclui a porta. Payloads e janelas de outros servicos sao rejeitados.
+const PWA = {"id": "fin", "name": "Sistema Financeiro", "origin": "https://servidor.tail074692.ts.net:8453", "scope": "/sistema/", "home": "/sistema/index.php", "icon": "/sistema/assets/icons/icon-192.png", "badge": "/sistema/assets/icons/notification-badge.png", "titleKey": "titulo", "bodyKey": "mensagem"};
+function pwaTarget(value) {
+  try {
+    const u = new URL(typeof value === 'string' && value ? value : PWA.home, PWA.origin + PWA.scope);
+    if (u.origin === PWA.origin && !u.username && !u.password && u.pathname.startsWith(PWA.scope)) return u.href;
+  } catch (_) {}
+  return PWA.origin + PWA.home;
+}
+function pwaTitle(value) {
+  let title = String(value || '').trim();
+  if (PWA.id === 'fin') title = title.replace(/^Financeiro\s*[·:-]\s*/i, '');
+  return !title || title === PWA.name ? PWA.name : (title.startsWith(PWA.name + ' · ') ? title : PWA.name + ' · ' + title);
+}
+function pwaOwnClient(client) {
+  try { const u = new URL(client.url); return u.origin === PWA.origin && u.pathname.startsWith(PWA.scope); } catch (_) { return false; }
+}
+self.addEventListener('push', (event) => {
+  if (self.location.origin !== PWA.origin) return;
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (_) { data = {body: event.data ? event.data.text() : ''}; }
+  event.waitUntil((async () => {
+    if (PWA.id === 'hub' && !data.test) {
+      const windows = await self.clients.matchAll({type: 'window', includeUncontrolled: true});
+      if (windows.some(w => pwaOwnClient(w) && w.visibilityState === 'visible' && w.focused)) return;
+    }
+    await self.registration.showNotification(pwaTitle(data[PWA.titleKey]), {
+      body: String(data[PWA.bodyKey] || data.body || 'Há um novo aviso neste aplicativo.'),
+      icon: PWA.origin + PWA.icon,
+      badge: PWA.origin + PWA.badge,
+      tag: PWA.id + ':' + String(data.tag || (PWA.id === 'erp' ? 'pdv-autorizacao-' + String(data.id || 'pendente') : 'aviso')),
+      ...(PWA.id === 'erp' ? {renotify: true} : {}),
+      ...(PWA.id === 'hub' ? {renotify: true, requireInteraction: true, vibrate: [500,200,500,200,500,200,500]} : {}),
+      data: {url: pwaTarget(data.url), app: PWA.origin, clientId: data.clientId || ''}
+    });
+  })());
+});
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  if (self.location.origin !== PWA.origin) return;
+  const target = pwaTarget(event.notification.data && event.notification.data.url);
+  event.waitUntil((async () => {
+    const windows = (await self.clients.matchAll({type: 'window', includeUncontrolled: true})).filter(pwaOwnClient);
+    windows.sort((a,b) => Number(b.focused) - Number(a.focused));
+    for (const client of windows) {
+      if (!('navigate' in client)) continue;
+      try { const navigated = await client.navigate(target); if (navigated) return await navigated.focus(); } catch (_) {}
+    }
+    return self.clients.openWindow(target);
+  })());
 });

@@ -156,7 +156,7 @@ function escapeHtml(s) {
 // PWA: service worker restrito a esta pasta (nao interfere em outros servicos do mesmo servidor)
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.php', { scope: './' }).catch(function () {});
+    navigator.serviceWorker.register('https://servidor.tail074692.ts.net:8453/sistema/sw.php', { scope: 'https://servidor.tail074692.ts.net:8453/sistema/', updateViaCache: 'none' }).catch(function () {});
   });
 }
 
@@ -179,9 +179,14 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
     if (!('Notification' in window) || Notification.permission !== 'granted') { return; }
     itens.filter(function (n) { return !n.lida_em && vistas.indexOf(n.chave) < 0; }).slice(0, 3).forEach(function (n) {
       vistas.push(n.chave);
-      var opts = { body: n.mensagem, icon: 'assets/icons/icon-192.png', tag: n.chave, data: { url: n.url || 'index.php' } };
-      if (navigator.serviceWorker && navigator.serviceWorker.ready) { navigator.serviceWorker.ready.then(function (reg) { reg.showNotification(n.titulo, opts); }); }
-      else { new Notification(n.titulo, opts); }
+      var origem = 'https://servidor.tail074692.ts.net:8453';
+      var destino;
+      try { destino = new URL(n.url || 'index.php', origem + '/sistema/'); } catch (_) { destino = new URL('/sistema/index.php', origem); }
+      if (destino.origin !== origem || destino.pathname.indexOf('/sistema/') !== 0 || destino.username || destino.password) destino = new URL('/sistema/index.php', origem);
+      var titulo = 'Sistema Financeiro · ' + String(n.titulo || 'Novo aviso').replace(/^Financeiro\s*[·:-]\s*/i, '');
+      var opts = {body: n.mensagem, icon: origem + '/sistema/assets/icons/icon-192.png', badge: origem + '/sistema/assets/icons/notification-badge.png', tag: 'fin:' + n.chave, data: {url: destino.href, app: origem}};
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) { navigator.serviceWorker.getRegistration(origem + '/sistema/').then(function (reg) { if (reg && reg.scope === origem + '/sistema/') return reg.showNotification(titulo, opts); }).catch(function () {}); }
+      else { var aviso = new Notification(titulo, opts); aviso.onclick = function () { window.focus(); window.location.href = destino.href; }; }
     });
     try { localStorage.setItem('finNotifVistas', JSON.stringify(vistas.slice(-100))); } catch (e) {}
   }
@@ -216,7 +221,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   function pushSuportado() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
   function registroSw() { // sem service worker (ex.: HTTP) o "ready" nunca resolve: desiste em 3 s
     if (!pushSuportado()) { return Promise.resolve(null); }
-    return Promise.race([navigator.serviceWorker.ready, new Promise(function (ok) { setTimeout(function () { ok(null); }, 3000); })]);
+    return Promise.race([navigator.serviceWorker.getRegistration('https://servidor.tail074692.ts.net:8453/sistema/').then(function (reg) { return reg && reg.scope === 'https://servidor.tail074692.ts.net:8453/sistema/' ? reg : null; }), new Promise(function (ok) { setTimeout(function () { ok(null); }, 3000); })]);
   }
   function assinarPush() {
     if (!pushSuportado() || Notification.permission !== 'granted') { return Promise.resolve(false); }
