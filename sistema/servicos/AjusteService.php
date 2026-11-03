@@ -85,3 +85,25 @@ function ajustar_fatura(int $cartao_id, string $ym, $valor_final): array
     }
     return ['ajuste' => $ajuste, 'outros' => $outros, 'negativo' => $ajuste < 0];
 }
+
+/**
+ * Remove o "Reajuste de fatura" manual das faturas nao pagas que vencem depois de $ym. Quando chega a fatura real do banco, o
+ * reajuste que fazia a projecao dos meses seguintes perde o sentido: o que vale e o que o banco informa (RN-39).
+ * @return array{qtd: int, total: float}
+ */
+function remover_reajustes_futuros_fatura(int $cartao_id, string $ym): array
+{
+    $pagas = array_column(q_all('SELECT mes FROM faturas WHERE cartao_id = ?', [$cartao_id]), 'mes');
+    $ids = [];
+    $total = 0.0;
+    foreach (q_all("SELECT id, valor, fatura_mes FROM lancamentos WHERE perfil_id = ? AND cartao_id = ? AND ajuste = 'fatura' AND fatura_mes > ?", [perfil_id(), $cartao_id, $ym]) as $r) {
+        if (!in_array($r['fatura_mes'], $pagas, true)) {
+            $ids[] = (int) $r['id'];
+            $total += (float) $r['valor'];
+        }
+    }
+    foreach (array_chunk($ids, 400) as $lote) {
+        q('DELETE FROM lancamentos WHERE perfil_id = ? AND id IN (' . implode(',', array_fill(0, count($lote), '?')) . ')', array_merge([perfil_id()], $lote));
+    }
+    return ['qtd' => count($ids), 'total' => round($total, 2)];
+}

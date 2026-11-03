@@ -11,6 +11,20 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.14.0', 'build' => '20261103.1', 'data' => '03/11/2026', 'hora' => '08:55',
+                'titulo' => 'Fatura importada passa a mandar nas faturas seguintes',
+                'destaque' => 'Ao importar a fatura do banco, os reajustes manuais dos meses seguintes saem e as faturas futuras mostram as parcelas que o banco informa.',
+                'categorias' => array(
+                    array('nome' => 'Novidades', 'icone' => 'fa-refresh', 'cor' => '#16a34a', 'itens' => array(
+                        array('titulo' => 'Reajustes manuais saem sozinhos', 'descricao' => 'Ao confirmar a importação de uma fatura, o Reajuste de fatura das faturas seguintes ainda não pagas é removido, pois o que vale agora é o que o banco informou.'),
+                        array('titulo' => 'Parcelas futuras espelham o banco', 'descricao' => 'As parcelas que faltam das compras parceladas da fatura passam a constar nas faturas seguintes, e as parcelas projetadas de compras que o banco não traz mais (estorno, cancelamento) são removidas.'),
+                    )),
+                    array('nome' => 'Melhorias', 'icone' => 'fa-wrench', 'cor' => '#d97706', 'itens' => array(
+                        array('titulo' => 'Aviso do que foi limpo', 'descricao' => 'A mensagem depois da importação informa quantas parcelas e quantos reajustes (e o valor deles) foram removidos.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.13.7', 'build' => '20261031.5', 'data' => '31/10/2026', 'hora' => '16:39',
                 'titulo' => 'Lotes e movimentações dentro do painel do investimento',
                 'destaque' => 'Os lotes, a projeção de 12 meses e o histórico de movimentações agora abrem no próprio painel do investimento, sem sair da lista.',

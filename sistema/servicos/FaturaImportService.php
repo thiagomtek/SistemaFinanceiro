@@ -160,6 +160,7 @@ function fatura_marcar_existentes(int $cartaoId, array $linhas): array
                 // IA indisponivel ou sem resposta: nao assume nada, so avisa
                 $linhas[$i]['status'] = 'provavel';
                 $linhas[$i]['parecido'] = $cands[0]['descricao'] . ' (' . $rotulo . ', fatura ' . mes_label($cands[0]['fatura_mes']) . ')';
+                $linhas[$i]['grupos_duvida'] = array_column($cands, 'grupo_id'); // sem certeza: a serie gravada nao pode ser dada como cancelada
             }
         }
     }
@@ -359,13 +360,108 @@ function fatura_categoria_por_nome(string $nome, array $categorias): ?int
     return null;
 }
 
+/** Hash do lancamento de parcela projetada (lancada antes de a fatura chegar): distingue a projecao do que veio do banco. */
+function fatura_hash_parcela(int $pid, int $cartaoId, string $grupo, int $n): string
+{
+    return sha1('parcela|' . $pid . '|' . $cartaoId . '|' . $grupo . '|' . $n);
+}
+
+/** Series de parcelas que o arquivo da fatura traz (grupo => true), incluindo as que ficaram em duvida. */
+function fatura_grupos_do_arquivo(array $linhas): array
+{
+    $g = [];
+    foreach ($linhas as $l) {
+        if (!empty($l['grupo']) && !empty($l['pn'])) {
+            $g[(string) $l['grupo']] = true;
+        }
+        foreach ((array) ($l['grupos_duvida'] ?? []) as $d) {
+            if ($d) {
+                $g[(string) $d] = true;
+            }
+        }
+    }
+    return $g;
+}
+
+/**
+ * Lanca as parcelas $pn+1..$pt de uma compra nas faturas seguintes a $ymBase. Pula fatura paga e parcela ja lancada.
+ * $l: descricao, valor, tags, grupo, pn, pt. $contaLancadas = conta no "puladas" tambem as parcelas que ja existiam.
+ */
+function fatura_projetar_parcelas(array $cartaoRow, string $ymBase, array $l, ?int $cat, int $impId, array &$st, bool $contaLancadas): void
+{
+    $pid = perfil_id();
+    $cartaoId = (int) $cartaoRow['id'];
+    $pn = (int) $l['pn'];
+    $pt = (int) $l['pt'];
+    for ($k = 1; $k <= min($pt - $pn, 120); $k++) {
+        $ymk = substr(add_meses($ymBase . '-01', $k), 0, 7);
+        if (q_val('SELECT id FROM faturas WHERE cartao_id = ? AND mes = ?', [$cartaoId, $ymk])) {
+            $st['puladas']++;
+            continue;
+        }
+        if (q_val('SELECT id FROM lancamentos WHERE perfil_id = ? AND cartao_id = ? AND grupo_id = ? AND parcela_num = ?', [$pid, $cartaoId, $l['grupo'], $pn + $k])) {
+            $st['puladas'] += $contaLancadas ? 1 : 0;
+            continue;
+        }
+        q_insert(
+            'INSERT INTO lancamentos (perfil_id, tipo, descricao, valor, data, efetivado, cartao_id, fatura_mes, categoria_id, tags, grupo_id,
+                parcela_num, parcela_total, importacao_id, hash_unico)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            [$pid, 'despesa', mb_substr(fatura_descricao_parcela($l['descricao'], $pn + $k, $pt), 0, 160), $l['valor'],
+                fatura_vencimento($cartaoRow, $ymk), 0, $cartaoId, $ymk, $cat, ($l['tags'] ?? '') ?: null, $l['grupo'], $pn + $k, $pt, $impId,
+                fatura_hash_parcela($pid, $cartaoId, (string) $l['grupo'], $pn + $k)]
+        );
+        $st['projetadas']++;
+    }
+}
+
+/**
+ * Remove as parcelas projetadas (lancadas por uma importacao anterior) das compras que a fatura $ym nao traz mais: estorno,
+ * cancelamento ou parcelamento encerrado. So mexe em fatura nao paga, a partir de $ym, e em serie que ja deveria constar em $ym
+ * (tem lancamento nessa fatura ou antes). Parcela que veio de uma fatura real ou foi lancada a mao nunca e removida.
+ * @return int quantidade removida
+ */
+function fatura_remover_projecoes_obsoletas(int $cartaoId, string $ym, array $gruposNoArquivo): int
+{
+    $pid = perfil_id();
+    $pagas = array_column(q_all('SELECT mes FROM faturas WHERE cartao_id = ?', [$cartaoId]), 'mes');
+    $ancora = [];
+    $ids = [];
+    foreach (q_all(
+        'SELECT id, grupo_id, parcela_num, fatura_mes, hash_unico FROM lancamentos
+         WHERE perfil_id = ? AND cartao_id = ? AND grupo_id IS NOT NULL AND parcela_num IS NOT NULL AND importacao_id IS NOT NULL AND fatura_mes >= ?',
+        [$pid, $cartaoId, $ym]
+    ) as $r) {
+        $g = (string) $r['grupo_id'];
+        if (isset($gruposNoArquivo[$g]) || in_array($r['fatura_mes'], $pagas, true)
+            || $r['hash_unico'] !== fatura_hash_parcela($pid, $cartaoId, $g, (int) $r['parcela_num'])) {
+            continue;
+        }
+        if (!isset($ancora[$g])) {
+            $ancora[$g] = (bool) q_val('SELECT id FROM lancamentos WHERE perfil_id = ? AND cartao_id = ? AND grupo_id = ? AND fatura_mes <= ? LIMIT 1', [$pid, $cartaoId, $g, $ym]);
+        }
+        if ($ancora[$g]) {
+            $ids[] = (int) $r['id'];
+        }
+    }
+    foreach (array_chunk($ids, 400) as $lote) {
+        anexos_remover_arquivos($lote);
+        q('DELETE FROM lancamentos WHERE perfil_id = ? AND id IN (' . implode(',', array_fill(0, count($lote), '?')) . ')', array_merge([$pid], $lote));
+    }
+    return count($ids);
+}
+
 /**
  * Grava os itens aprovados na fatura $ym do cartao. Itens ja importados (hash) sao ignorados.
  * $itens: linhas com 'hash' e opcional 'categoria_id'. Se $totalFatura for informado, ajusta a fatura a esse total
  * (cria/atualiza o item "Reajuste de fatura" com a diferenca) depois de gravar.
+ *
+ * A fatura do banco manda sobre a projecao: nas faturas seguintes (nao pagas) os "Reajuste de fatura" manuais sao removidos e,
+ * com $linhasArquivo (todas as linhas lidas, ja marcadas por fatura_marcar_existentes), as parcelas projetadas de compras que o
+ * arquivo nao traz mais saem, e as parcelas restantes das series que ele traz passam a constar (RN-39).
  * @return array{importados: int, duplicados: int, ajuste: ?float}
  */
-function fatura_importar_itens(int $cartaoId, string $ym, array $itens, string $arquivo, ?float $totalFatura = null): array
+function fatura_importar_itens(int $cartaoId, string $ym, array $itens, string $arquivo, ?float $totalFatura = null, ?array $linhasArquivo = null): array
 {
     $pid = perfil_id();
     if (!pertence_ao_perfil('cartoes', $cartaoId) || mes_valido($ym, '') === '') {
@@ -375,12 +471,18 @@ function fatura_importar_itens(int $cartaoId, string $ym, array $itens, string $
         throw new InvalidArgumentException('Esta fatura já está paga. Reabra-a antes de importar itens.');
     }
     $cartaoRow = q_one('SELECT * FROM cartoes WHERE id = ? AND perfil_id = ?', [$cartaoId, $pid]);
-    $st = ['importados' => 0, 'duplicados' => 0, 'ajuste' => null, 'projetadas' => 0, 'puladas' => 0, 'reajustes_recalculados' => 0];
-    $afetadas = []; // faturas futuras que ja tinham "Reajuste de fatura": total anterior, para preservar o total definido pelo usuario
+    $st = ['importados' => 0, 'duplicados' => 0, 'ajuste' => null, 'projetadas' => 0, 'puladas' => 0,
+        'reajustes_removidos' => 0, 'reajustes_removidos_total' => 0.0, 'parcelas_removidas' => 0];
     $pdo = db();
     $pdo->beginTransaction();
     try {
         $impId = q_insert('INSERT INTO importacoes (perfil_id, arquivo, tipo) VALUES (?,?,?)', [$pid, mb_substr($arquivo, 0, 200), 'fatura_cartao']);
+        $rj = remover_reajustes_futuros_fatura($cartaoId, $ym);
+        $st['reajustes_removidos'] = $rj['qtd'];
+        $st['reajustes_removidos_total'] = $rj['total'];
+        if ($linhasArquivo !== null) {
+            $st['parcelas_removidas'] = fatura_remover_projecoes_obsoletas($cartaoId, $ym, fatura_grupos_do_arquivo($linhasArquivo));
+        }
         foreach ($itens as $l) {
             if (q_val('SELECT id FROM lancamentos WHERE perfil_id = ? AND hash_unico = ?', [$pid, $l['hash']])) {
                 $st['duplicados']++;
@@ -402,47 +504,30 @@ function fatura_importar_itens(int $cartaoId, string $ym, array $itens, string $
             );
             // parcelas restantes: lanca as proximas parcelas nas faturas dos meses seguintes (RF: compra parcelada em lote)
             if (!empty($l['restantes']) && $grupo && $pn && $pt && $pt > $pn) {
-                for ($k = 1; $k <= min($pt - $pn, 120); $k++) {
-                    $ymk = substr(add_meses($ym . '-01', $k), 0, 7);
-                    if (!array_key_exists($ymk, $afetadas)) {
-                        $afetadas[$ymk] = q_val("SELECT id FROM lancamentos WHERE perfil_id = ? AND cartao_id = ? AND fatura_mes = ? AND ajuste = 'fatura' LIMIT 1", [$pid, $cartaoId, $ymk]) ? fatura_total($cartaoId, $ymk) : null;
-                    }
-                    if (q_val('SELECT id FROM faturas WHERE cartao_id = ? AND mes = ?', [$cartaoId, $ymk])
-                        || q_val('SELECT id FROM lancamentos WHERE perfil_id = ? AND cartao_id = ? AND grupo_id = ? AND parcela_num = ?', [$pid, $cartaoId, $grupo, $pn + $k])) {
-                        $st['puladas']++;
-                        continue;
-                    }
-                    q_insert(
-                        'INSERT INTO lancamentos (perfil_id, tipo, descricao, valor, data, efetivado, cartao_id, fatura_mes, categoria_id, tags, grupo_id,
-                            parcela_num, parcela_total, importacao_id, hash_unico)
-                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                        [$pid, 'despesa', mb_substr(fatura_descricao_parcela($l['descricao'], $pn + $k, $pt), 0, 160), $l['valor'],
-                            fatura_vencimento($cartaoRow, $ymk), 0, $cartaoId, $ymk, $cat, ($l['tags'] ?? '') ?: null, $grupo, $pn + $k, $pt, $impId,
-                            sha1('parcela|' . $pid . '|' . $cartaoId . '|' . $grupo . '|' . ($pn + $k))]
-                    );
-                    $st['projetadas']++;
-                }
+                fatura_projetar_parcelas($cartaoRow, $ym, ['descricao' => $l['descricao'], 'valor' => $l['valor'], 'tags' => $l['tags'] ?? '', 'grupo' => $grupo, 'pn' => $pn, 'pt' => $pt],
+                    $cat, $impId, $st, true);
             }
             $st['importados']++;
+        }
+        // series que o arquivo traz e ja estavam gravadas: as parcelas que faltam nas faturas seguintes passam a constar
+        foreach ((array) $linhasArquivo as $l) {
+            if (($l['status'] ?? '') !== 'existe' || empty($l['grupo']) || empty($l['pn']) || empty($l['pt']) || $l['pt'] <= $l['pn']) {
+                continue;
+            }
+            $a = q_one(
+                'SELECT descricao, valor, tags, categoria_id, fatura_mes FROM lancamentos WHERE perfil_id = ? AND cartao_id = ? AND grupo_id = ? AND parcela_num = ? ORDER BY id LIMIT 1',
+                [$pid, $cartaoId, $l['grupo'], $l['pn']]
+            );
+            if ($a) {
+                fatura_projetar_parcelas($cartaoRow, (string) $a['fatura_mes'], ['descricao' => $a['descricao'], 'valor' => $a['valor'], 'tags' => $a['tags'] ?? '',
+                    'grupo' => $l['grupo'], 'pn' => $l['pn'], 'pt' => $l['pt']], $a['categoria_id'] ? (int) $a['categoria_id'] : null, $impId, $st, false);
+            }
         }
         q('UPDATE importacoes SET qtd_importados = ?, qtd_duplicados = ? WHERE id = ?', [$st['importados'], $st['duplicados'], $impId]);
         $pdo->commit();
     } catch (Throwable $t) {
         $pdo->rollBack();
         throw $t;
-    }
-    // O "Reajuste de fatura" define o TOTAL da fatura (ex.: projecao do Mobills). Ao lancar as parcelas reais nas faturas futuras,
-    // o total definido pelo usuario e mantido: o reajuste encolhe (ou some) em vez de somar em duplicidade.
-    foreach ($afetadas as $ymk => $totalAntes) {
-        if ($totalAntes === null || q_val('SELECT id FROM faturas WHERE cartao_id = ? AND mes = ?', [$cartaoId, $ymk])) {
-            continue;
-        }
-        $outros = (float) q_val(
-            "SELECT COALESCE(SUM(valor),0) FROM lancamentos WHERE perfil_id = ? AND cartao_id = ? AND fatura_mes = ? AND tipo = 'despesa' AND (ajuste IS NULL OR ajuste <> 'fatura')",
-            [$pid, $cartaoId, $ymk]
-        );
-        ajustar_fatura($cartaoId, $ymk, max($totalAntes, $outros));
-        $st['reajustes_recalculados']++;
     }
     if ($totalFatura !== null) {
         $st['ajuste'] = ajustar_fatura($cartaoId, $ym, $totalFatura)['ajuste'];

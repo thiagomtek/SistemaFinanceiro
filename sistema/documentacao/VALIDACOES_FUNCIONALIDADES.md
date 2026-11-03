@@ -462,3 +462,18 @@ Pendências / ressalvas:
 - O atalho "Cenários na tela de Projeção" da antiga seção de projeção não foi levado para o modal.
 
 **Publicação das v1.13.6 e v1.13.7 (31/10/2026, ~16:45):** a VM estava na 1.13.5; foram enviados juntos o CSS dos títulos de KPI (v1.13.6) e os arquivos desta versão. Tag de reversão `sistema-financeiro-fin_app:rollback-1.13.5`, build do `fin_app`, `php -l` nos três PHP alterados, troca só do `fin_app` com `--no-deps` (`fin_db` seguiu healthy). Pelo Caddy: login 200, `api_investimento_painel.php` sem sessão 401, `inv_painel.js` 200. Sem alteração de banco. Tela autenticada não vista.
+
+## v1.14.0 — fatura importada manda nas faturas seguintes (build 20261103.1) — 03/11/2026
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/servicos/FaturaImportService.php`, `sistema/servicos/AjusteService.php`, `sistema/importar_fatura.php`, `tools/ci/testes_fatura_import.php`, `sistema/config_versao.php`, `sistema/config_novidades.php`, `sistema/documentacao/REQUISITOS_E_REGRAS_DE_NEGOCIO.md` (RN-39).
+
+Motivo: o usuário cria "Reajuste de fatura" nos meses seguintes para projetar o gasto do cartão quando o banco não deixa exportar a prévia da fatura aberta. Ao importar a fatura real, esses reajustes e as parcelas que deixaram de existir precisam sair, deixando as faturas futuras como o banco informa.
+
+Verificado (PHP 7.4 em contêiner, SQLite): `tools/ci/testes_fatura_import.php` com os cenários novos — reajustes das faturas seguintes removidos na importação (com contagem e valor), faturas futuras passam a ser só as parcelas, compra estornada/cancelada tem as parcelas projetadas removidas, série em dúvida mantida, importar fatura anterior à série não apaga a projeção, parcela lançada à mão e item comum preservados, reajuste de fatura paga preservado, série já gravada sem "restantes" passa a ter as parcelas que faltam e reler a fatura não duplica; as demais suítes (`testes_dominio`, `testes_projecao`, `testes_p2`, `testes_revisao`, `testes_reajustes_mobills`) e `validar_php.sh` seguem passando.
+
+Pendências / ressalvas:
+- Não exercitado em navegador nem com um PDF real/MariaDB: só em teste de domínio. Convém importar uma fatura real de teste e conferir a mensagem final e as faturas seguintes.
+- A remoção usa o que a leitura do PDF devolveu: se a leitura falhar em reconhecer a parcela de uma linha, as parcelas projetadas dessa compra saem (a mensagem pós-importação informa a quantidade).
+- Só a importação de fatura dispara a limpeza; pagar a fatura não mexe nos reajustes futuros. A tela ainda recusa importar quando nenhum item novo é aprovado, então reler uma fatura sem itens novos não sincroniza as faturas seguintes.

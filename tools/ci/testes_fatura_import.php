@@ -179,33 +179,93 @@ igual($st3['projetadas'], 1, 'parcela 3/3 projetada em dezembro');
 igual($st3['puladas'], 1, 'parcela que cairia em fatura já paga é pulada');
 
 
-echo "== parcelas projetadas e Reajuste de fatura existente\n";
+echo "== fatura real manda: reajustes futuros saem e as parcelas passam a constar (RN-39)\n";
 q('DELETE FROM lancamentos');
 q('DELETE FROM faturas');
-// faturas futuras ja tinham um "Reajuste de fatura" (ex.: projecao do Mobills) que define o total
+// faturas futuras ja tinham um "Reajuste de fatura" (ex.: projecao do Mobills) que simulava o gasto
 ajustar_fatura($cartao, '2026-11', '300');
 ajustar_fatura($cartao, '2026-12', '1000');
-$mq = fatura_marcar_existentes($cartao, [
-    ['data' => '2026-08-27', 'descricao' => 'Loja A 1/3', 'valor' => 100.00, 'parcela' => '1/3', 'tags' => '', 'categoria' => ''],
-    ['data' => '2026-08-27', 'descricao' => 'Loja B 1/3', 'valor' => 100.00, 'parcela' => '1/3', 'tags' => '', 'categoria' => ''],
-    ['data' => '2026-08-27', 'descricao' => 'Loja C 1/2', 'valor' => 50.00, 'parcela' => '1/2', 'tags' => '', 'categoria' => ''],
-]);
+$linha = function (string $desc, float $valor, string $parc): array {
+    return ['data' => '2026-08-27', 'descricao' => $desc, 'valor' => $valor, 'parcela' => $parc, 'tags' => '', 'categoria' => ''];
+};
+$mq = fatura_marcar_existentes($cartao, [$linha('Loja A 1/3', 100.00, '1/3'), $linha('Loja B 1/3', 100.00, '1/3'), $linha('Loja C 1/2', 50.00, '1/2')]);
 foreach ($mq as $i => $x) {
     $mq[$i]['restantes'] = true;
 }
-$st4 = fatura_importar_itens($cartao, '2026-10', $mq, 'x.pdf', null);
-igual(fatura_total($cartao, '2026-11'), 300, 'novembro mantém o total de 300 definido antes (projeção = 250)');
-igual(q_val("SELECT valor FROM lancamentos WHERE ajuste = 'fatura' AND fatura_mes = '2026-11'"), 50, 'o reajuste de novembro encolheu para 50');
-igual(fatura_total($cartao, '2026-12'), 1000, 'dezembro mantém 1000 (parcelas 3/3 somam 200)');
-igual(q_val("SELECT valor FROM lancamentos WHERE ajuste = 'fatura' AND fatura_mes = '2026-12'"), 800, 'o reajuste de dezembro encolheu para 800');
-igual($st4['reajustes_recalculados'], 2, 'duas faturas futuras tiveram o reajuste recalculado');
+$st4 = fatura_importar_itens($cartao, '2026-10', $mq, 'x.pdf', null, $mq);
+igual($st4['reajustes_removidos'], 2, 'os dois reajustes manuais das faturas seguintes foram removidos');
+igual($st4['reajustes_removidos_total'], 1300, 'total dos reajustes removidos informado (300 + 1000)');
+igual(q_val("SELECT COUNT(*) FROM lancamentos WHERE ajuste = 'fatura'"), 0, 'nenhum reajuste sobrou');
+igual(fatura_total($cartao, '2026-11'), 250, 'novembro passa a ser só as parcelas (100 + 100 + 50)');
+igual(fatura_total($cartao, '2026-12'), 200, 'dezembro passa a ser só as parcelas 3/3 (100 + 100)');
+
+// reajuste manual feito depois e a fatura de novembro chega do banco sem a compra C (estornada): C 2/2 sai, A e B ficam
+ajustar_fatura($cartao, '2026-12', '900');
+$nov = fatura_marcar_existentes($cartao, [$linha('Loja A 2/3', 100.00, '2/3'), $linha('Loja B 2/3', 100.00, '2/3')]);
+ok($nov[0]['status'] === 'existe' && $nov[1]['status'] === 'existe', 'parcelas 2/3 de A e B já constam (projetadas)');
+$st5 = fatura_importar_itens($cartao, '2026-11', [], 'nov.pdf', null, $nov);
+igual($st5['parcelas_removidas'], 1, 'a parcela 2/2 da compra C (que o banco não traz mais) foi removida');
+igual(q_val("SELECT COUNT(*) FROM lancamentos WHERE descricao LIKE 'Loja C%'"), 1, 'da compra C só resta a parcela 1/2 de outubro, que veio da fatura');
+igual(fatura_total($cartao, '2026-11'), 200, 'novembro espelha a fatura do banco (A + B)');
+igual($st5['reajustes_removidos'], 1, 'o reajuste de dezembro foi removido');
+igual(fatura_total($cartao, '2026-12'), 200, 'dezembro volta a só as parcelas');
+igual(q_val("SELECT COUNT(*) FROM lancamentos WHERE descricao LIKE 'Loja A%'"), 3, 'a série da compra A continua inteira');
+
+// dezembro: o banco só traz a parcela 3/3 de A; a de B (cancelada) sai
+$dez = fatura_marcar_existentes($cartao, [$linha('Loja A 3/3', 100.00, '3/3')]);
+$st6 = fatura_importar_itens($cartao, '2026-12', [], 'dez.pdf', null, $dez);
+igual($st6['parcelas_removidas'], 1, 'a parcela 3/3 da compra B saiu');
+igual(fatura_total($cartao, '2026-12'), 100, 'dezembro só com a parcela de A');
+
+echo "== espelho: o que nao veio da projecao, serie em duvida e fatura paga ficam\n";
 q('DELETE FROM lancamentos');
-ajustar_fatura($cartao, '2026-11', '100');
-$mq2 = fatura_marcar_existentes($cartao, [['data' => '2026-08-27', 'descricao' => 'Loja D 1/2', 'valor' => 250.00, 'parcela' => '1/2', 'tags' => '', 'categoria' => '']]);
-$mq2[0]['restantes'] = true;
-fatura_importar_itens($cartao, '2026-10', $mq2, 'x.pdf', null);
-igual(fatura_total($cartao, '2026-11'), 250, 'parcelas maiores que o total antigo prevalecem (o reajuste some)');
-igual(q_val("SELECT COUNT(*) FROM lancamentos WHERE ajuste = 'fatura' AND fatura_mes = '2026-11'"), 0, 'sem reajuste negativo');
+q('DELETE FROM faturas');
+$mp2 = fatura_marcar_existentes($cartao, [$linha('Loja X 1/4', 80.00, '1/4')]);
+$mp2[0]['restantes'] = true;
+fatura_importar_itens($cartao, '2026-10', $mp2, 'x.pdf', null, $mp2); // projeta 2/4 (nov), 3/4 (dez), 4/4 (jan)
+$grupoX = q_val("SELECT grupo_id FROM lancamentos WHERE descricao LIKE 'Loja X%' LIMIT 1");
+// parcela lancada a mao em outro grupo e item comum do cartao em novembro
+q_insert("INSERT INTO lancamentos (perfil_id, tipo, descricao, valor, data, efetivado, cartao_id, fatura_mes, grupo_id, parcela_num, parcela_total) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+    [perfil_id(), 'despesa', 'Sofá 2/5', 400, '2026-11-04', 0, $cartao, '2026-11', 'manual-sofa', 2, 5]);
+q_insert("INSERT INTO lancamentos (perfil_id, tipo, descricao, valor, data, efetivado, cartao_id, fatura_mes) VALUES (?,?,?,?,?,?,?,?)",
+    [perfil_id(), 'despesa', 'Mercado', 60, '2026-11-10', 0, $cartao, '2026-11']);
+// importar uma fatura ANTERIOR (setembro) nao pode apagar a projecao da compra X, que so comeca em outubro
+$st7 = fatura_importar_itens($cartao, '2026-09', [], 'set.pdf', null, fatura_marcar_existentes($cartao, [$linha('Padaria', 10.00, '')]));
+igual($st7['parcelas_removidas'], 0, 'fatura anterior à série não remove a projeção dela');
+// serie em duvida (IA indisponivel): nao e dada como cancelada
+$st8 = fatura_importar_itens($cartao, '2026-11', [], 'nov.pdf', null, [['descricao' => 'Loja X parcela', 'status' => 'provavel', 'grupo' => 'outro', 'pn' => 2, 'pt' => 4, 'grupos_duvida' => [$grupoX]]]);
+igual($st8['parcelas_removidas'], 0, 'série em dúvida (provável) mantém as parcelas gravadas');
+// sem Loja X no arquivo de novembro: some a projeção dela, mas a parcela lancada a mao e o item comum ficam
+$st9 = fatura_importar_itens($cartao, '2026-11', [], 'nov.pdf', null, fatura_marcar_existentes($cartao, [$linha('Mercado novo', 5.00, '')]));
+igual($st9['parcelas_removidas'], 3, 'as parcelas 2/4, 3/4 e 4/4 da compra X saíram');
+igual(q_val("SELECT COUNT(*) FROM lancamentos WHERE descricao = 'Sofá 2/5'"), 1, 'parcela lançada à mão não é removida');
+igual(q_val("SELECT COUNT(*) FROM lancamentos WHERE descricao = 'Mercado'"), 1, 'item comum da fatura futura não é removido');
+igual(q_val("SELECT COUNT(*) FROM lancamentos WHERE descricao LIKE 'Loja X%'"), 1, 'a parcela 1/4 (outubro, já na fatura) permanece');
+
+// reajuste em fatura futura PAGA nao e removido
+q('DELETE FROM lancamentos');
+q('DELETE FROM faturas');
+ajustar_fatura($cartao, '2026-12', '500');
+pagar_fatura($cartao, '2026-12', $itau, '2026-12-04');
+ajustar_fatura($cartao, '2026-11', '700');
+$rp = remover_reajustes_futuros_fatura($cartao, '2026-10');
+igual($rp['qtd'], 1, 'só o reajuste da fatura aberta (novembro) foi removido');
+igual(q_val("SELECT COUNT(*) FROM lancamentos WHERE ajuste = 'fatura' AND fatura_mes = '2026-12'"), 1, 'o reajuste da fatura paga permanece');
+
+echo "== serie ja gravada sem 'restantes': ao reler a fatura, as parcelas que faltam passam a constar\n";
+q('DELETE FROM lancamentos');
+q('DELETE FROM faturas');
+$me = fatura_marcar_existentes($cartao, [$linha('Loja E 2/4', 120.00, '2/4')]);
+fatura_importar_itens($cartao, '2026-10', $me, 'e.pdf', null, $me); // sem marcar as restantes: nada projetado
+igual(q_val("SELECT COUNT(*) FROM lancamentos WHERE descricao LIKE 'Loja E%'"), 1, 'só a parcela da fatura foi gravada');
+$me2 = fatura_marcar_existentes($cartao, [$linha('Loja E 2/4', 120.00, '2/4')]);
+ok($me2[0]['status'] === 'existe', 'a parcela da fatura já existe');
+$st10 = fatura_importar_itens($cartao, '2026-10', [], 'e.pdf', null, $me2);
+igual($st10['projetadas'], 2, 'as parcelas 3/4 e 4/4 foram lançadas nas faturas seguintes');
+igual(fatura_total($cartao, '2026-11'), 120, 'novembro com a parcela 3/4');
+igual(fatura_total($cartao, '2026-12'), 120, 'dezembro com a parcela 4/4');
+$st11 = fatura_importar_itens($cartao, '2026-10', [], 'e.pdf', null, $me2);
+igual($st11['projetadas'], 0, 'reler a mesma fatura não duplica as parcelas');
 
 echo "== fatura Bradesco/Bradescard (caso real: parcelas de uma compra cancelada na mesma fatura)\n";
 $brad = ['emissor' => 'Bradescard', 'produto' => 'AMAZON MASTERCARD PLATINUM', 'final_cartao' => '5013', 'vencimento' => '2027-01-28', 'fechamento' => null, 'total_fatura' => 244.44, 'lancamentos' => []];

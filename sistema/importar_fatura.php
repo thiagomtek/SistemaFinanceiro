@@ -92,11 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new InvalidArgumentException('Nenhum item aprovado para importar.');
             }
             $total = (!empty($_POST['ajustar']) && $meta['total'] !== null) ? (float) $meta['total'] : null;
-            $st = fatura_importar_itens($cartaoId, $ym, $aprovados, $s['arquivo'], $total);
+            $st = fatura_importar_itens($cartaoId, $ym, $aprovados, $s['arquivo'], $total, $linhas);
             fatura_descartar_sessao();
             $msg = $st['importados'] . ' item(ns) importado(s)';
             if ($st['projetadas']) { $msg .= ', ' . $st['projetadas'] . ' parcela(s) futura(s) lançada(s) nas faturas seguintes'; }
-            if ($st['reajustes_recalculados']) { $msg .= ' · ' . $st['reajustes_recalculados'] . ' fatura(s) futura(s) com reajuste existente mantiveram o total e tiveram o reajuste recalculado'; }
+            if ($st['parcelas_removidas']) { $msg .= ', ' . $st['parcelas_removidas'] . ' parcela(s) projetada(s) removida(s) por não constarem mais na fatura'; }
+            if ($st['reajustes_removidos']) { $msg .= ' · ' . $st['reajustes_removidos'] . ' reajuste(s) manual(is) das faturas seguintes removido(s) (' . brl($st['reajustes_removidos_total']) . ')'; }
             if ($st['puladas']) { $msg .= ' (' . $st['puladas'] . ' já existiam ou caíram em fatura paga)'; }
             if ($st['duplicados']) { $msg .= ', ' . $st['duplicados'] . ' já existiam e foram ignorados'; }
             if ($st['ajuste'] !== null && abs($st['ajuste']) >= 0.005) { $msg .= '; fatura ajustada ao total com reajuste de ' . brl($st['ajuste']); }
@@ -146,6 +147,7 @@ if (!$sessao):
       <li>Você <strong>aprova item por item</strong> (ou todos os novos de uma vez) e escolhe a categoria de cada um.</li>
       <li>Compras <strong>parceladas</strong> podem ter as parcelas restantes lançadas de uma vez nas faturas dos meses seguintes.</li>
       <li>Opcionalmente a fatura é ajustada ao total do PDF, criando o <em>Reajuste de fatura</em> com a diferença.</li>
+      <li>As faturas seguintes passam a espelhar o banco: os <em>Reajustes de fatura</em> manuais delas são removidos e as parcelas projetadas de compras que não constam mais (estorno, cancelamento) saem.</li>
     </ol>
     <p class="text-muted" style="font-size:12px"><i class="fa fa-lock"></i> O PDF é enviado ao Google (Gemini) apenas para extrair os itens; o arquivo e a senha não ficam guardados neste sistema.</p>
   </div>
