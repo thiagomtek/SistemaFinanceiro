@@ -14,6 +14,16 @@ function sql_sem_historico(string $alias = ''): string
 }
 
 /**
+ * Filtro SQL que deixa de fora o reajuste de saldo de conta (ajuste = 'saldo', RN-41): acerto de saldo nao e gasto nem renda
+ * recorrente e distorceria a media de avulsos (ex.: o "saldo inicial zerado" da carga). Continua valendo em saldos e totais do mes.
+ */
+function sql_sem_reajuste_saldo(string $alias = ''): string
+{
+    $c = $alias === '' ? 'ajuste' : $alias . '.ajuste';
+    return "($c IS NULL OR $c <> 'saldo')";
+}
+
+/**
  * Projecao mensal do saldo das contas e do patrimonio investido.
  * Fontes: lancamentos pendentes agendados (inclui parcelas/recorrencias), faturas de cartao em aberto
  * (no dia do vencimento) e, opcionalmente, media historica de gastos/receitas avulsos.
@@ -122,7 +132,7 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
         foreach (q_all(
             "SELECT tipo, SUM(valor) AS t FROM lancamentos
              WHERE perfil_id = ? AND efetivado = 1 AND cartao_id IS NULL AND fatura_id IS NULL AND grupo_id IS NULL AND parcela_num IS NULL
-               AND tipo IN ('receita','despesa') AND data >= ? AND data < ? AND " . sql_sem_restante() . ' GROUP BY tipo',
+               AND tipo IN ('receita','despesa') AND data >= ? AND data < ? AND " . sql_sem_restante() . ' AND ' . sql_sem_reajuste_saldo() . ' GROUP BY tipo',
             [$pid, $mesAtual . '-01', add_meses($mesAtual . '-01', 1)]
         ) as $r) {
             if ($r['tipo'] === 'receita') {
@@ -133,6 +143,23 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
         }
     }
 
+    // realizado neste mes em conta (ja esta no saldo de hoje): fora do fluxo que parte do saldo, mas dentro dos totais do mes mostrados na tela
+    $real = ['receitas' => 0.0, 'despesas' => 0.0, 'faturas' => 0.0, 'aplicacoes' => 0.0, 'resgates' => 0.0];
+    foreach (q_all(
+        "SELECT tipo, CASE WHEN fatura_id IS NULL THEN 0 ELSE 1 END AS fat, SUM(valor) AS t FROM lancamentos
+         WHERE perfil_id = ? AND efetivado = 1 AND cartao_id IS NULL AND tipo IN ('receita','despesa') AND data >= ? AND data < ? GROUP BY 1, 2",
+        [$pid, $mesAtual . '-01', add_meses($mesAtual . '-01', 1)]
+    ) as $r) {
+        $real[$r['tipo'] === 'receita' ? 'receitas' : ($r['fat'] ? 'faturas' : 'despesas')] += (float) $r['t'];
+    }
+    foreach (q_all(
+        "SELECT sentido_invest, SUM(valor) AS t FROM lancamentos
+         WHERE perfil_id = ? AND efetivado = 1 AND tipo = 'transferencia' AND investimento_id IS NOT NULL AND data >= ? AND data < ? GROUP BY 1",
+        [$pid, $mesAtual . '-01', add_meses($mesAtual . '-01', 1)]
+    ) as $r) {
+        $real[$r['sentido_invest'] === 'resgate' ? 'resgates' : 'aplicacoes'] += (float) $r['t'];
+    }
+
     // media historica (ultimos 3 meses completos) de lancamentos avulsos
     $media_desp = $media_rec = 0.0;
     if ($usar_media) {
@@ -141,7 +168,7 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
         $m = q_one(
             "SELECT COALESCE(SUM(CASE WHEN tipo='despesa' THEN valor END),0) AS d, COALESCE(SUM(CASE WHEN tipo='receita' THEN valor END),0) AS r
              FROM lancamentos WHERE perfil_id = ? AND data >= ? AND data < ? AND grupo_id IS NULL AND parcela_num IS NULL
-               AND fatura_id IS NULL AND tipo IN ('receita','despesa') AND (efetivado = 1 OR cartao_id IS NOT NULL) AND " . sql_sem_restante() . ' AND ' . sql_sem_historico(),
+               AND fatura_id IS NULL AND tipo IN ('receita','despesa') AND (efetivado = 1 OR cartao_id IS NOT NULL) AND " . sql_sem_restante() . ' AND ' . sql_sem_historico() . ' AND ' . sql_sem_reajuste_saldo(),
             [$pid, $ini, $fim]
         );
         $media_desp = (float) $m['d'] / 3;
@@ -231,6 +258,7 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
             $aportesBruto += $valor;
             $aportesLiq += $valor - $imp;
         }
+        $rl = $k === 0 ? $real : array_fill_keys(array_keys($real), 0.0);
         $dm = $datasMes[$k];
         $investido = $totBruto[$dm] + $aportesBruto;
         $investidoLiq = $totLiq[$dm] + $aportesLiq;
@@ -238,6 +266,11 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
             'mes' => $ym, 'label' => mes_label($ym),
             'receitas' => round($entradas, 2), 'despesas' => round($desp[$ym] + $extra_desp, 2), 'faturas' => round($fat[$ym], 2),
             'aplicacoes' => round($tr_out[$ym], 2), 'resgates' => round($tr_in[$ym], 2),
+            // totais do mes inteiro (realizado + a realizar); no mes atual o realizado ja esta no saldo e nao entra no fluxo acima
+            'receitas_mes' => round($entradas + $rl['receitas'], 2), 'despesas_mes' => round($desp[$ym] + $extra_desp + $rl['despesas'], 2),
+            'faturas_mes' => round($fat[$ym] + $rl['faturas'], 2),
+            'resultado_mes' => round($resultadoOp + $rl['receitas'] - $rl['despesas'] - $rl['faturas'] + $rl['resgates'] - $rl['aplicacoes'], 2),
+            'realizado' => ['receitas' => round($rl['receitas'], 2), 'despesas' => round($rl['despesas'], 2), 'faturas' => round($rl['faturas'], 2)],
             'aporte' => round($aporte, 2), 'aporte_sobra' => round($aporteAuto, 2), 'resultado' => round($resultadoOp, 2), 'saldo' => round($saldo, 2),
             'investido' => round($investido, 2), 'investido_liquido' => round($investidoLiq, 2),
             'patrimonio' => round($saldo + $investido, 2), 'patrimonio_liquido' => round($saldo + $investidoLiq, 2),

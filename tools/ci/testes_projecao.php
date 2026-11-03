@@ -115,5 +115,38 @@ $pm = projetar(3, true);
 igual($pm['media_despesas'], 3000 / 3, 'média de despesas: só os 3.000 avulsos (os 6.000 do histórico ficam de fora) ÷ 3 meses');
 igual($pm['media_receitas'], 1500 / 3, 'média de receitas: a importação comum entra, os 9.000 do histórico não');
 
+echo "== RN-41: reajuste de saldo de conta fica fora da media de avulsos\n";
+q('INSERT INTO lancamentos (perfil_id, tipo, descricao, valor, data, efetivado, conta_id, ajuste) VALUES (?,?,?,?,?,?,?,?)',
+    [perfil_id(), 'despesa', 'Reajuste*', 6000, $mesPassado, 1, $conta, 'saldo']);
+q('INSERT INTO lancamentos (perfil_id, tipo, descricao, valor, data, efetivado, conta_id, ajuste) VALUES (?,?,?,?,?,?,?,?)',
+    [perfil_id(), 'receita', 'Reajuste*', 900, $mesPassado, 1, $conta, 'saldo']);
+$pr2 = projetar(3, true);
+igual($pr2['media_despesas'], 3000 / 3, 'média de despesas não muda com o reajuste de saldo de 6.000');
+igual($pr2['media_receitas'], 1500 / 3, 'média de receitas não muda com o reajuste de saldo de 900');
+
+echo "== mes atual: os totais do mes somam o ja realizado (que esta no saldo) e o que falta\n";
+q('DELETE FROM lancamentos');
+$cartaoR = q_insert('INSERT INTO cartoes (perfil_id, nome, conta_pagamento_id, limite, dia_fechamento, dia_vencimento) VALUES (?,?,?,?,?,?)', [perfil_id(), 'Cartão R', $conta, 5000, 1, 28]);
+$iniMes = date('Y-m-01');
+$fimMes = date('Y-m-t');
+criar_lancamento_ids(['tipo' => 'receita', 'descricao' => 'Salário recebido', 'valor' => 5000, 'data' => $iniMes, 'efetivado' => 1, 'conta_id' => $conta]);
+criar_lancamento_ids(['tipo' => 'despesa', 'descricao' => 'Mercado pago', 'valor' => 300, 'data' => $iniMes, 'efetivado' => 1, 'conta_id' => $conta]);
+$fatPaga = q_insert('INSERT INTO faturas (cartao_id, mes, valor_pago, data_pagamento, conta_id) VALUES (?,?,?,?,?)', [$cartaoR, date('Y-m'), 700, $iniMes, $conta]);
+q_insert('INSERT INTO lancamentos (perfil_id, tipo, descricao, valor, data, efetivado, conta_id, fatura_id) VALUES (?,?,?,?,?,?,?,?)', [perfil_id(), 'despesa', 'Fatura paga', 700, $iniMes, 1, $conta, $fatPaga]);
+criar_lancamento_ids(['tipo' => 'despesa', 'descricao' => 'Luz a pagar', 'valor' => 200, 'data' => $fimMes, 'efetivado' => 0, 'conta_id' => $conta]);
+criar_lancamento_ids(['tipo' => 'receita', 'descricao' => 'Extra a receber', 'valor' => 50, 'data' => $fimMes, 'efetivado' => 0, 'conta_id' => $conta]);
+$pr = projetar(3, false, 0.0);
+$m0 = $pr['serie'][0];
+igual($m0['receitas'], 50, 'fluxo do mês atual: só o que falta receber');
+igual($m0['receitas_mes'], 5050, 'receitas do mês = 5.000 já recebidos + 50 a receber');
+igual($m0['despesas_mes'], 300 + 200, 'despesas do mês = 300 pagos + 200 a pagar');
+igual($m0['faturas_mes'], 700, 'faturas do mês incluem a fatura já paga');
+igual($m0['realizado']['receitas'], 5000, 'realizado: receitas');
+igual($m0['resultado_mes'], 5050 - 500 - 700, 'resultado do mês = totais do mês');
+igual($m0['resultado'], 50 - 200, 'resultado do fluxo (a realizar) não muda');
+igual($pr['serie'][1]['receitas_mes'], $pr['serie'][1]['receitas'], 'meses seguintes: totais do mês = fluxo');
+igual($pr['serie'][1]['realizado']['receitas'], 0, 'meses seguintes não têm realizado');
+igual($m0['saldo'], saldo_total_contas() + 50 - 200 - ($m0['aporte']), 'saldo continua partindo do saldo de hoje, sem contar o realizado de novo');
+
 echo "\n" . ($falhas ? "$falhas FALHA(S)\n" : "TODOS OS TESTES PASSARAM\n");
 exit($falhas ? 1 : 0);

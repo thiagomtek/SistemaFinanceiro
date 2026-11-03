@@ -55,9 +55,9 @@
       data: {
         labels: s.map(function (x) { return x.label; }),
         datasets: [
-          { label: 'Receitas', data: s.map(function (x) { return x.receitas; }), backgroundColor: '#16a34a', borderRadius: 3, stack: 'in' },
-          { label: 'Despesas', data: s.map(function (x) { return -x.despesas; }), backgroundColor: '#dc2626', borderRadius: 3, stack: 'out' },
-          { label: 'Faturas de cartão', data: s.map(function (x) { return -x.faturas; }), backgroundColor: '#9333ea', borderRadius: 3, stack: 'out' }
+          { label: 'Receitas', data: s.map(function (x) { return x.receitas_mes; }), backgroundColor: '#16a34a', borderRadius: 3, stack: 'in' },
+          { label: 'Despesas', data: s.map(function (x) { return -x.despesas_mes; }), backgroundColor: '#dc2626', borderRadius: 3, stack: 'out' },
+          { label: 'Faturas de cartão', data: s.map(function (x) { return -x.faturas_mes; }), backgroundColor: '#9333ea', borderRadius: 3, stack: 'out' }
         ]
       },
       options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { tooltip: { callbacks: { label: function (c) { return ' ' + c.dataset.label + ': ' + brl(Math.abs(c.parsed.y)); } } } }, scales: { y: eixoY, x: { grid: { display: false } } } }
@@ -84,11 +84,12 @@
     var tb = $('t-proj').querySelector('tbody');
     tb.innerHTML = s.map(function (x) {
       var cls = function (v) { return v < 0 ? ' text-danger' : ''; };
+      var jaFeito = function (v) { return v > 0 ? ' title="Já realizado neste mês: ' + brl(v) + '"' : ''; };
       return '<tr><td><strong>' + escapeHtml(x.label) + '</strong></td>' +
-        '<td class="num text-success">' + brl(x.receitas) + '</td>' +
-        '<td class="num">' + brl(x.despesas) + '</td>' +
-        '<td class="num">' + brl(x.faturas) + '</td>' +
-        '<td class="num' + cls(x.resultado) + '">' + brl(x.resultado) + '</td>' +
+        '<td class="num text-success"' + jaFeito(x.realizado.receitas) + '>' + brl(x.receitas_mes) + '</td>' +
+        '<td class="num"' + jaFeito(x.realizado.despesas) + '>' + brl(x.despesas_mes) + '</td>' +
+        '<td class="num"' + jaFeito(x.realizado.faturas) + '>' + brl(x.faturas_mes) + '</td>' +
+        '<td class="num' + cls(x.resultado_mes) + '">' + brl(x.resultado_mes) + '</td>' +
         '<td class="num">' + (x.aporte > 0 ? brl(x.aporte) : '—') + '</td>' +
         '<td class="num' + cls(x.saldo) + '"><strong>' + brl(x.saldo) + '</strong></td>' +
         '<td class="num">' + brl(x.investido) + '</td>' +

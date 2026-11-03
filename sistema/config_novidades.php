@@ -11,6 +11,17 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.14.1', 'build' => '20261103.2', 'data' => '03/11/2026', 'hora' => '09:20',
+                'titulo' => 'Projeção: totais do mês atual e média sem ajuste de saldo',
+                'destaque' => 'No detalhe mês a mês, as receitas, despesas e faturas do mês atual agora somam o que já foi recebido ou pago e o que ainda falta.',
+                'categorias' => array(
+                    array('nome' => 'Correções', 'icone' => 'fa-bug', 'cor' => '#dc2626', 'itens' => array(
+                        array('titulo' => 'Média de despesas sem o ajuste de saldo', 'descricao' => 'O reajuste de saldo de conta (como o saldo inicial zerado da carga) deixou de entrar na média de despesas e receitas avulsas da projeção, que vinha somando cerca de R$ 1.900 por mês a mais de despesa.'),
+                        array('titulo' => 'Receita do mês atual não some mais', 'descricao' => 'O salário já recebido deixava a receita do mês zerada e o resultado negativo. Agora o mês mostra o total (com o valor já realizado ao passar o mouse); o saldo continua partindo do saldo de hoje.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.14.0', 'build' => '20261103.1', 'data' => '03/11/2026', 'hora' => '08:55',
                 'titulo' => 'Fatura importada passa a mandar nas faturas seguintes',
                 'destaque' => 'Ao importar a fatura do banco, os reajustes manuais dos meses seguintes saem e as faturas futuras mostram as parcelas que o banco informa.',

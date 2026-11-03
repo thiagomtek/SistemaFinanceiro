@@ -495,3 +495,16 @@ Pendências / ressalvas:
 - Só a importação de fatura dispara a limpeza; pagar a fatura não mexe nos reajustes futuros. A tela ainda recusa importar quando nenhum item novo é aprovado, então reler uma fatura sem itens novos não sincroniza as faturas seguintes.
 
 **Publicação da v1.14.0 (03/11/2026, ~09:08):** a VM estava na 1.13.8 (alteração de PWA/notificações que não está neste repositório, só na cópia de implantação); foram copiados para ela apenas `FaturaImportService.php`, `AjusteService.php`, `importar_fatura.php`, `config_versao.php`, a entrada de novidades e as notas de documentação, sem tocar nos arquivos da 1.13.8. Tag de reversão `sistema-financeiro-fin_app:rollback-1.13.8`, `php -l` nos cinco PHP, build do `fin_app` e troca só dele com `--no-deps` (`fin_db` seguiu healthy; Caddy e ERP intactos). `login.php` 200 e `importar_fatura.php` sem sessão 302 direto no contêiner. Sem alteração de banco. Importação real de fatura não exercitada.
+
+## v1.14.1 — projeção: totais do mês atual (build 20261103.2) — 03/11/2026
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/servicos/ProjecaoService.php`, `sistema/assets/js/projecao.js`, `sistema/projecao.php`, `tools/ci/testes_projecao.php`, `sistema/config_versao.php`, `sistema/config_novidades.php`, `sistema/documentacao/REQUISITOS_E_REGRAS_DE_NEGOCIO.md` (RN-40).
+
+Causa: a projeção só somava lançamentos pendentes; o salário de novembro (R$ 17.580,25 em dois lançamentos recorrentes) estava efetivado em 01/11 e a fatura de R$ 3.845,37 paga em novembro também ficava fora, então a tabela mostrava receita zero e resultado de −R$ 10.514,54. Com a correção, novembro soma R$ 17.580,25 de receitas, R$ 9.632,07 de faturas (paga + em aberto) e resultado de R$ 3.220,34, que fecha com o saldo de R$ 3.282,90 (saldo inicial do mês + resultado). Números conferidos por consulta de leitura ao banco de produção; a tela não foi vista no navegador.
+
+Verificado: `tools/ci/testes_projecao.php` (novo bloco: totais do mês = realizado + a realizar, realizado discriminado, meses seguintes iguais ao fluxo, saldo não conta o realizado duas vezes), as outras 9 suítes e `validar_php.sh` em PHP 7.4.
+
+Pendências / ressalvas:
+- Média de despesas avulsas: incluía o "Ajuste de saldo (saldo inicial zerado)" de R$ 5.781,41 de 26/10 (cerca de R$ 1.927 por mês de despesa projetada). Retirado com autorização do Thiago (RN-41): `sql_sem_reajuste_saldo()` na média e no abatimento do mês atual; teste novo em `testes_projecao.php`. O Reajuste de fatura de R$ 369,90 do período continua na média (não autorizado a alterar).
