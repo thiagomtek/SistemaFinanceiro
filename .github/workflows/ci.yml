@@ -29,6 +29,7 @@ jobs:
       - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_projecao.php
       - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_risco.php
       - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_cenario.php
+      - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_alocacao.php
       - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_usuarios.php
       - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_revisao.php
       - run: docker run --rm -v "$PWD:/app" -w /app php:7.4-cli php tools/ci/testes_push.php

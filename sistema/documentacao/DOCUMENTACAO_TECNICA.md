@@ -28,6 +28,7 @@ Usuário → Tailscale → Caddy (HTTPS) → fin_app (PHP/Apache, 172.17.0.1:809
 | `servicos/RiscoService.php` | Risco do patrimônio frente à Selic: cenários (projeção com o CDI deslocado) e exposição por tipo de rendimento e por instituição (RN-44); API `api_projecao_risco.php` |
 | `servicos/InflacaoService.php` | Inflação real e percebida: IPCA/INPC/dólar (BCB), IPCA por grupo e item (IBGE/SIDRA), Focus, juro real, reajustes recorrentes e cesta do usuário (RN-45, RN-46) |
 | `servicos/CenarioService.php` | Cenário econômico: manchetes RSS, leitura por IA (Gemini, só manchetes e indicadores públicos), dia, fechamento mensal e rotina `cenario_atualizar_tudo` (RN-48) |
+| `servicos/AlocacaoService.php` | Sugestões por classe de ativo: classificação, perfil e faixas, reserva de emergência, fatores do momento, Tesouro e retorno mínimo do aluguel (RN-49); API `api_cenario_perfil.php` (POST com CSRF) salva o perfil |
 | `servicos/DashboardService.php` | Agregações do dashboard |
 | `servicos/ImportacaoService.php` / `XlsxReaderService.php` | Leitura e aplicação de planilhas |
 | `servicos/PerfilService.php` | Usuário e perfil interno (um por usuário) |
@@ -125,3 +126,5 @@ Aviso no celular e no navegador com o aplicativo fechado, no mesmo modelo do ERP
 - **IA e privacidade:** usa a chave `GEMINI_API_KEY` já existente no `fin_app` (nunca no repositório). O prompt contém só manchetes públicas e indicadores públicos. Em testes, `$GLOBALS['FIN_IA_MOCK']`, `FIN_HTTP_MOCK` e `FIN_BCB_MOCK` substituem a rede e a IA.
 - **Testes:** `tools/ci/testes_cenario.php` e `testes_risco.php` (no CI).
 
+
+- **Certificado do Tesouro:** o arquivo aberto do Tesouro Transparente usa uma cadeia que termina na GlobalSign Root R46, mais nova que o pacote de certificados da imagem PHP. A raiz pública está em `sistema/certs/globalsign_root_r46.pem` (SHA-256 `4F:A3:12:6D:8D:3A:11:D1:C4:85:5A:4F:80:7C:BA:D6:CF:91:9D:3A:5A:88:B0:3B:EA:2C:63:72:D9:3C:40:C9`, igual à da loja do sistema e à publicada pela GlobalSign) e vale **só** para esse endereço (`CURLOPT_CAINFO`); a verificação do certificado continua ligada em todas as buscas.

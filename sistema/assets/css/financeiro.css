@@ -276,3 +276,11 @@ a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .mes-titulo { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
 .rot-tempo { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-right: 6px; }
 .rot-tempo.futuro { color: #2563eb; }
+
+/* sugestoes por classe de ativo */
+.reserva-box { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; border: 1px solid #e2e8f0; background: #f8fafc; }
+.reserva-box.ok { border-color: #bbf7d0; background: #f0fdf4; }
+.reserva-box.baixa { border-color: #fecaca; background: #fef2f2; }
+.faixa-barra { position: relative; height: 8px; background: #e2e8f0; border-radius: 4px; margin: 8px 0 6px; }
+.faixa-ref { position: absolute; top: 0; height: 8px; background: #93c5fd; border-radius: 4px; }
+.faixa-atual { position: absolute; top: -3px; width: 4px; height: 14px; background: #1e293b; border-radius: 2px; }

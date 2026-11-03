@@ -10,6 +10,7 @@ json_out([
     'dia' => cenario_dia(),
     'risco' => $risco,
     'percebida' => inflacao_percebida(),
+    'alocacao' => alocacao_sugestoes(),
     'historico' => risco_historico(12),
     'mensais' => cenario_mensais(6),
     'rotulos' => [1 => risco_nivel_rotulo(1), 2 => risco_nivel_rotulo(2), 3 => risco_nivel_rotulo(3), 4 => risco_nivel_rotulo(4), 5 => risco_nivel_rotulo(5)],

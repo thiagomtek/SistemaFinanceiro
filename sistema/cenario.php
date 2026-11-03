@@ -23,6 +23,10 @@ require __DIR__ . '/header.php';
     <div id="c-dolar"></div>
   </div>
 
+  <div class="painel"><h4><i class="fa fa-pie-chart text-primary"></i> Sugestões por classe de ativo <a href="#" class="btn btn-outline-secondary btn-sm" data-modal="modal-perfil" style="margin-left:auto"><i class="fa fa-sliders"></i> Perfil e faixas</a></h4>
+    <div id="c-aloc"></div>
+  </div>
+
   <div class="painel"><h4><i class="fa fa-newspaper-o text-warning"></i> Leitura do dia <small class="text-muted" id="c-dia-info" style="font-weight:400"></small></h4>
     <div id="c-dia"></div>
   </div>
@@ -34,6 +38,22 @@ require __DIR__ . '/header.php';
   <div class="painel"><h4><i class="fa fa-history text-secondary"></i> Histórico: passado, presente e futuro</h4>
     <div id="c-historico"></div>
   </div>
+</div>
+<div class="modal fin-modal erp-modal-md" id="modal-perfil">
+  <form class="modal-dialog" id="form-perfil" onsubmit="return false">
+    <div class="modal-header"><h4 class="modal-title"><i class="fa fa-sliders"></i> Perfil e faixas de alocação</h4><button type="button" class="close" data-fechar>&times;</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Tolerância a risco</label><select class="form-control" id="pf-tol"><option value="conservador">Conservador</option><option value="moderado">Moderado</option><option value="arrojado">Arrojado</option></select></div>
+        <div class="form-group"><label title="Quantos meses de despesas devem estar em liquidez diária (contas e renda fixa pós-fixada de resgate diário)">Reserva de emergência (meses)</label><input class="form-control" id="pf-reserva" type="number" min="1" max="36" step="1"></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:600;margin:6px 0 10px"><input type="checkbox" id="pf-padrao" style="width:auto"> Usar as faixas padrão da tolerância escolhida</label>
+      <div class="table-responsive"><table class="table m-0" id="pf-tab"><thead><tr><th>Classe</th><th class="num">Mínimo (%)</th><th class="num">Máximo (%)</th></tr></thead><tbody></tbody></table></div>
+      <p class="text-muted" style="font-size:12px;margin:10px 0 0">As faixas são pontos de partida genéricos para conversar com um planejador, e não uma recomendação: ajuste à sua realidade, objetivos e prazo. Elas definem o que a tela chama de "acima" ou "abaixo da faixa".</p>
+      <div class="text-danger" id="pf-erro" style="font-size:13px;margin-top:8px"></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-fechar>Cancelar</button><button type="button" class="btn btn-primary" id="pf-salvar"><i class="fa fa-check"></i> Salvar</button></div>
+  </form>
 </div>
 <?php $PAGINA_SCRIPTS = ['assets/js/cenario.js'];
 require __DIR__ . '/footer.php'; ?>

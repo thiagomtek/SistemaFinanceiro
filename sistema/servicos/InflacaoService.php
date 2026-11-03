@@ -17,6 +17,9 @@ const IDX_INPC_MES = '188';
 const IDX_DOLAR = '1';
 const INFLACAO_INTERVALO_S = 6 * 3600; // nao busca de novo antes disso, a menos que seja forcado
 const IBGE_IPCA_GERAL = 7169;
+const TESOURO_URL = 'https://www.tesourotransparente.gov.br/ckan/dataset/df56aa42-484a-4a59-8184-7676580c81e3/resource/796d2059-14e9-44e3-80c9-2d9e30b405c1/download/precotaxatesourodireto.csv';
+/** Series do Tesouro na tabela indices: tipo do titulo e prazo-alvo em anos (usa o vencimento mais proximo do prazo). */
+const TESOURO_SERIES = ['TIPC3' => ['Tesouro IPCA+', 3], 'TIPC6' => ['Tesouro IPCA+', 6], 'TPRE3' => ['Tesouro Prefixado', 3], 'TPRE6' => ['Tesouro Prefixado', 6]];
 
 /** Itens do IPCA (codigo SIDRA => [rotulo, tipo]); 'grupo' ou 'item'. */
 const IBGE_IPCA_ITENS = [
@@ -40,7 +43,7 @@ const INFLACAO_CATEGORIA_GRUPO = [
 ];
 
 /** GET HTTP simples. Em teste, $GLOBALS['FIN_HTTP_MOCK'] (callable(string $url): ?string) substitui a rede. */
-function cenario_http_get(string $url, int $timeout = 25): string
+function cenario_http_get(string $url, int $timeout = 25, ?string $cainfo = null): string
 {
     if (isset($GLOBALS['FIN_HTTP_MOCK']) && is_callable($GLOBALS['FIN_HTTP_MOCK'])) {
         $r = ($GLOBALS['FIN_HTTP_MOCK'])($url);
@@ -52,6 +55,9 @@ function cenario_http_get(string $url, int $timeout = 25): string
     $ch = curl_init($url);
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 10, CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS => 3, CURLOPT_USERAGENT => 'SistemaFinanceiro/1.0 (uso pessoal)', CURLOPT_HTTPHEADER => ['Accept: application/json, application/xml, text/xml']]);
+    if ($cainfo !== null) {
+        curl_setopt($ch, CURLOPT_CAINFO, $cainfo); // raiz de confianca so para este endereco (a verificacao do certificado continua ligada)
+    }
     $resp = curl_exec($ch);
     $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
@@ -103,6 +109,90 @@ function inflacao_atualizar_ibge(): int
     return $n;
 }
 
+/**
+ * Taxas de compra do Tesouro IPCA+ (taxa real, acima da inflacao) e do Tesouro Prefixado (taxa nominal), de dois prazos (cerca de 3 e
+ * 6 anos), do arquivo aberto do Tesouro Transparente. Guarda a taxa na serie e o vencimento escolhido em `parametros`.
+ * @return int series gravadas
+ */
+function inflacao_atualizar_tesouro(): int
+{
+    $melhor = []; // "tipo|vencimento" => [data base, taxa]
+    $tipos = array_column(TESOURO_SERIES, 0, 0); // tipo => tipo
+    // o certificado do Tesouro termina na GlobalSign Root R46, mais nova que o pacote de certificados da imagem: a raiz publica vai junto, so para este endereco
+    $corpo = cenario_http_get(TESOURO_URL, 90, __DIR__ . '/../certs/globalsign_root_r46.pem');
+    $pos = strpos($corpo, "\n"); // pula o cabecalho; le linha a linha sem montar uma lista com as 170 mil linhas do arquivo
+    $tam = strlen($corpo);
+    $pos = $pos === false ? $tam : $pos + 1;
+    while ($pos < $tam) {
+        $fim = strpos($corpo, "\n", $pos);
+        $fim = $fim === false ? $tam : $fim;
+        $linha = substr($corpo, $pos, $fim - $pos);
+        $pos = $fim + 1;
+        if (strpos($linha, ';') === false) {
+            continue;
+        }
+        $c = explode(';', rtrim($linha, "\r"));
+        if (count($c) < 5 || !isset($tipos[$c[0]])) {
+            continue;
+        }
+        $venc = parse_data($c[1]);
+        $base = parse_data($c[2]);
+        $taxa = str_replace(',', '.', $c[3]);
+        if (!$venc || !$base || !is_numeric($taxa)) {
+            continue;
+        }
+        $k = $c[0] . '|' . $venc;
+        if (!isset($melhor[$k]) || $base > $melhor[$k][0]) {
+            $melhor[$k] = [$base, (float) $taxa];
+        }
+    }
+    $maxBase = $melhor ? max(array_column($melhor, 0)) : null;
+    $info = [];
+    $n = 0;
+    foreach (TESOURO_SERIES as $serie => [$tipo, $anos]) {
+        $alvo = strtotime($maxBase . ' +' . $anos . ' year');
+        $escolhido = null;
+        foreach ($melhor as $k => [$base, $taxa]) {
+            [$t, $venc] = explode('|', $k);
+            if ($t !== $tipo || $base !== $maxBase || $venc <= $maxBase) {
+                continue; // so titulos negociados na data mais recente (os vencidos nao aparecem nela)
+            }
+            $dist = abs(strtotime($venc) - $alvo);
+            if ($escolhido === null || $dist < $escolhido[0]) {
+                $escolhido = [$dist, $venc, $taxa];
+            }
+        }
+        if ($escolhido) {
+            indices_gravar($serie, [[$maxBase, $escolhido[2]]]);
+            $info[$serie] = $escolhido[1];
+            $n++;
+        }
+    }
+    if ($n === 0) {
+        throw new RuntimeException('O arquivo do Tesouro não trouxe taxas.');
+    }
+    parametro_set('tesouro_info', json_encode(['data_base' => $maxBase, 'vencimentos' => $info]));
+    return $n;
+}
+
+/**
+ * Taxas atuais do Tesouro. breakeven = inflacao implicita no prefixado em relacao ao IPCA+ do mesmo prazo, (1 + pre) / (1 + real) - 1.
+ * @return array{data_base: ?string, ipca_3: ?array, ipca_6: ?array, pre_3: ?array, pre_6: ?array, breakeven_6: ?float}
+ */
+function tesouro_taxas(): array
+{
+    $info = json_decode((string) parametro_get('tesouro_info'), true) ?: [];
+    $le = function (string $serie) use ($info) {
+        $u = indices_ultimo($serie);
+        return $u ? ['taxa' => (float) $u['valor'], 'vencimento' => $info['vencimentos'][$serie] ?? null] : null;
+    };
+    $r = ['data_base' => $info['data_base'] ?? null, 'ipca_3' => $le('TIPC3'), 'ipca_6' => $le('TIPC6'), 'pre_3' => $le('TPRE3'), 'pre_6' => $le('TPRE6'), 'breakeven_6' => null];
+    if ($r['ipca_6'] && $r['pre_6']) {
+        $r['breakeven_6'] = round(((1 + $r['pre_6']['taxa'] / 100) / (1 + $r['ipca_6']['taxa'] / 100) - 1) * 100, 2);
+    }
+    return $r;
+}
+
 /** Expectativas do boletim Focus (mediana anual) do IPCA, da Selic e do cambio. @return int linhas gravadas */
 function inflacao_atualizar_focus(): int
 {
@@ -146,7 +236,7 @@ function inflacao_atualizar(bool $forcar = false): array
         }
         return $r['mensagem'];
     };
-    foreach (['Banco Central (CDI e Selic)' => $cdiSelic, 'Banco Central (IPCA, INPC, dólar)' => 'inflacao_atualizar_bcb', 'IBGE (IPCA por grupo e item)' => 'inflacao_atualizar_ibge', 'Focus (expectativas)' => 'inflacao_atualizar_focus'] as $nome => $fn) {
+    foreach (['Banco Central (CDI e Selic)' => $cdiSelic, 'Banco Central (IPCA, INPC, dólar)' => 'inflacao_atualizar_bcb', 'IBGE (IPCA por grupo e item)' => 'inflacao_atualizar_ibge', 'Focus (expectativas)' => 'inflacao_atualizar_focus', 'Tesouro (taxas IPCA+ e prefixado)' => 'inflacao_atualizar_tesouro'] as $nome => $fn) {
         try {
             $v = $fn();
             $fontes[$nome] = is_int($v) ? $v . ' valores' : (string) $v;
@@ -222,6 +312,7 @@ function inflacao_resumo(): array
             'selic_ano' => focus_valor('SELI', $ano), 'selic_ano_seguinte' => focus_valor('SELI', $ano + 1),
             'cambio_ano' => focus_valor('CAMB', $ano), 'cambio_ano_seguinte' => focus_valor('CAMB', $ano + 1),
         ],
+        'tesouro' => tesouro_taxas(),
         'dolar' => $dolar, 'dolar_var_12m' => dolar_variacao(365), 'cdi' => $cdi, 'selic' => selic_atual(),
         'juro_real_12m' => $ipca12 ? juro_real($cdi, $ipca12['valor']) : null,
         'juro_real_esperado' => $esp !== null ? juro_real($cdi, $esp) : null,

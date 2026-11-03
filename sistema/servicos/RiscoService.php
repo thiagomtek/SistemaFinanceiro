@@ -360,6 +360,20 @@ function risco_consolidar(?string $hoje = null): array
         'dolarizacao' => $dol, 'sensibilidade_pp' => $cen['sensibilidade_pp']];
 }
 
+/** Sinal por classe de ativo (para guardar na foto de risco e comparar mes a mes). Falha aqui nao impede a foto. @return array<string, string> */
+function risco_sugestoes_resumo(?string $hoje = null): array
+{
+    try {
+        $out = [];
+        foreach (alocacao_sugestoes($hoje)['classes'] as $c) {
+            $out[$c['chave']] = $c['sinal'];
+        }
+        return $out;
+    } catch (Throwable $t) {
+        return [];
+    }
+}
+
 /** Grava (ou refaz) a foto de risco do dia do perfil atual. */
 function risco_snapshot_salvar(?string $hoje = null): array
 {
@@ -367,7 +381,7 @@ function risco_snapshot_salvar(?string $hoje = null): array
     $r = risco_consolidar($hoje);
     q('REPLACE INTO risco_snapshots (perfil_id, data, nivel_geral, dimensoes_json, indicadores_json, exposicao_json) VALUES (?,?,?,?,?,?)',
         [perfil_id(), $hoje, $r['nivel_geral'], json_encode($r['dimensoes'], JSON_UNESCAPED_UNICODE), json_encode($r['indicadores'], JSON_UNESCAPED_UNICODE),
-            json_encode(['exposicao' => $r['exposicao'], 'dolarizacao' => ['sinal' => $r['dolarizacao']['sinal'], 'pontos' => $r['dolarizacao']['pontos']], 'sensibilidade_pp' => $r['sensibilidade_pp']], JSON_UNESCAPED_UNICODE)]);
+            json_encode(['exposicao' => $r['exposicao'], 'dolarizacao' => ['sinal' => $r['dolarizacao']['sinal'], 'pontos' => $r['dolarizacao']['pontos']], 'sensibilidade_pp' => $r['sensibilidade_pp'], 'sugestoes' => risco_sugestoes_resumo($hoje)], JSON_UNESCAPED_UNICODE)]);
     return ['perfil_id' => perfil_id(), 'nivel_geral' => $r['nivel_geral']];
 }
 

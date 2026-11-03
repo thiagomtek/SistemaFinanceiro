@@ -50,6 +50,92 @@
       '<p class="text-muted" style="font-size:12px;margin:10px 0 0">Cada fator vale +1 (a favor de aumentar a parcela em dólar) ou −1 (contra); a regra é simples e aberta. Quanto colocar em dólar depende do seu objetivo, prazo e tolerância a oscilação, e esta tela não é recomendação de investimento. Para dizer que um investimento está em dólar, edite-o em Investimentos e marque a exposição cambial.</p>';
   }
 
+  var SINAL = { aumentar: ['info', 'Avaliar aumentar'], manter: ['success', 'Manter'], reduzir: ['warning', 'Avaliar reduzir'], aguardar: ['secondary', 'Aguardar'], priorizar_reserva: ['danger', 'Reforçar a reserva antes'] };
+  var TOL = { conservador: 'Conservador', moderado: 'Moderado', arrojado: 'Arrojado' };
+  var aloc = null;
+
+  function renderAloc(a) {
+    aloc = a;
+    var r = a.reserva;
+    var h = '<p style="font-size:13.5px;margin:0 0 10px">Perfil <strong>' + escapeHtml(TOL[a.perfil.tolerancia]) + '</strong>' + (a.perfil.personalizado ? '' : ' (padrão: revise em "Perfil e faixas")') + '. Total investido: <strong>' + brl(a.total_investido) + '</strong>. Cada classe é comparada com a faixa de referência que você definiu e com os fatores do momento.</p>';
+    h += '<div class="reserva-box ' + (r.baixa ? 'baixa' : 'ok') + '"><i class="fa ' + (r.baixa ? 'fa-exclamation-triangle' : 'fa-check-circle') + '"></i> <strong>Reserva de emergência:</strong> ' +
+      (r.meses === null ? 'sem histórico de despesas para calcular' : num(r.meses, 1) + ' meses de despesas (' + brl(r.liquido) + ' em liquidez diária ÷ média de ' + brl(r.media_despesas) + ' por mês), alvo de ' + r.alvo + ' meses') +
+      (r.baixa ? '. <strong>Enquanto estiver abaixo do alvo, a tela não sugere aumentar risco.</strong>' : '.') + '</div>';
+    h += '<div class="dim-grid">' + a.classes.map(function (c) {
+      var s = SINAL[c.sinal] || SINAL.manter;
+      var barra = '<div class="faixa-barra" title="Faixa de referência ' + c.faixa[0] + '% a ' + c.faixa[1] + '% · hoje ' + num(c.pct, 1) + '%"><div class="faixa-ref" style="left:' + Math.min(100, c.faixa[0]) + '%;width:' + Math.max(1, Math.min(100, c.faixa[1]) - Math.min(100, c.faixa[0])) + '%"></div><div class="faixa-atual" style="left:' + Math.min(99.2, c.pct) + '%"></div></div>';
+      return '<div class="dim-card nv-' + (c.sinal === 'reduzir' || c.sinal === 'priorizar_reserva' ? 4 : (c.sinal === 'aumentar' ? 2 : (c.sinal === 'aguardar' ? 3 : 1))) + '"><div class="dim-topo"><strong>' + escapeHtml(c.rotulo) + '</strong><span class="erp-badge erp-badge-' + s[0] + '">' + escapeHtml(s[1]) + '</span></div>' +
+        '<div class="dim-motivo"><strong>' + num(c.pct, 1) + '%</strong> (' + brl(c.valor) + ') · faixa ' + c.faixa[0] + '% a ' + c.faixa[1] + '%' + barra + '<span class="text-muted">' + escapeHtml(c.indicacao) + '</span>' +
+        (c.fatores.length ? '<ul class="lista-fatores" style="margin-top:6px">' + c.fatores.map(function (f) { return '<li><i class="fa ' + (f.pontos > 0 ? 'fa-plus-circle text-warning' : 'fa-minus-circle text-success') + '"></i> ' + escapeHtml(f.texto) + '</li>'; }).join('') + '</ul>' : '<div class="text-muted" style="margin-top:6px;font-size:12px">Nenhum fator do momento pesa a favor ou contra.</div>') +
+        '<div class="text-muted" style="font-size:11.5px;margin-top:4px">' + escapeHtml(c.descricao) + '</div></div></div>';
+    }).join('') + '</div>';
+
+    var t = a.tesouro;
+    if (t && (t.ipca_6 || t.pre_6)) {
+      var linha = function (rot, x, suf) { return x ? '<tr><td>' + rot + '</td><td class="num">' + (x.vencimento ? dataBR(x.vencimento).slice(3) : '—') + '</td><td class="num"><strong>' + num(x.taxa, 2) + '%</strong> ' + suf + '</td></tr>' : ''; };
+      h += '<h5 style="font-size:13.5px;margin:18px 0 8px">Renda fixa de prazo: o que o Tesouro paga hoje' + (t.data_base ? ' <small class="text-muted" style="font-weight:400">(dados de ' + dataBR(t.data_base) + ')</small>' : '') + '</h5>' +
+        '<div class="table-responsive"><table class="table table-striped table-hover m-0"><thead><tr><th>Título</th><th class="num">Vencimento</th><th class="num">Taxa de compra</th></tr></thead><tbody>' +
+        linha('Tesouro IPCA+ (curto)', t.ipca_3, 'acima do IPCA') + linha('Tesouro IPCA+ (longo)', t.ipca_6, 'acima do IPCA') + linha('Tesouro Prefixado (curto)', t.pre_3, 'ao ano') + linha('Tesouro Prefixado (longo)', t.pre_6, 'ao ano') + '</tbody></table></div>';
+      if (t.breakeven_6 !== null) {
+        h += '<p style="font-size:13px;margin:8px 0 0">A inflação <strong>implícita</strong> nos prazos longos (prefixado contra IPCA+) é de <strong>' + pc(t.breakeven_6) + '</strong> ao ano' + (a.indicadores.ipca_esperado !== null ? ', contra IPCA esperado de ' + pc(a.indicadores.ipca_esperado) + ' no próximo ano' : '') +
+          '. Se a inflação ficar abaixo da implícita, o prefixado rende mais que o IPCA+; se ficar acima, o IPCA+ rende mais. Títulos de prazo podem ter marcação a mercado negativa se vendidos antes do vencimento.</p>';
+      }
+    }
+    var im = a.imovel;
+    if (im) {
+      h += '<h5 style="font-size:13.5px;margin:18px 0 8px">Imóvel para aluguel: quanto o aluguel precisa render</h5>' +
+        '<p style="font-size:13px;margin:0">Para um imóvel empatar com a renda fixa, o retorno total precisa passar do CDI líquido de IR (<strong>' + pc(im.cdi_liquido) + '</strong> ao ano, com IR de 15%). Se o imóvel valorizar só com a inflação esperada (' + pc(im.valorizacao) + '), o <strong>aluguel líquido</strong> (depois de IR, vacância, condomínio e IPTU) precisa render pelo menos <strong>' + pc(im.aluguel_minimo_ano) + ' ao ano</strong> do valor do imóvel (cerca de ' + pc(im.aluguel_minimo_mes) + ' ao mês). Compare com o aluguel que você consegue de fato.</p>';
+    }
+    h += '<p class="text-muted" style="font-size:12px;margin:12px 0 0">Indicações por <strong>classe</strong>, nunca por produto ou papel. A regra é aberta (cada fator vale +1 ou −1 e aparece acima) e usa dados oficiais e a leitura das manchetes; ela não conhece seus objetivos, prazos, impostos e outros bens. <strong>Não é recomendação de investimento:</strong> use como ponto de partida para decidir, de preferência com um profissional habilitado.</p>';
+    $('c-aloc').innerHTML = h;
+  }
+
+  function abrirPerfil() {
+    if (!aloc) { return; }
+    var p = aloc.perfil;
+    $('pf-tol').value = p.tolerancia;
+    $('pf-reserva').value = p.reserva_meses;
+    $('pf-padrao').checked = p.faixas_editadas.length === 0;
+    $('pf-erro').textContent = '';
+    $('pf-tab').querySelector('tbody').innerHTML = aloc.classes.map(function (c) {
+      return '<tr><td>' + escapeHtml(c.rotulo) + '</td><td class="num"><input class="form-control" style="width:90px;display:inline-block" type="number" min="0" max="100" step="1" data-k="' + c.chave + '" data-t="min" value="' + c.faixa[0] + '"></td>' +
+        '<td class="num"><input class="form-control" style="width:90px;display:inline-block" type="number" min="0" max="100" step="1" data-k="' + c.chave + '" data-t="max" value="' + c.faixa[1] + '"></td></tr>';
+    }).join('');
+    aplicarPadrao();
+  }
+  function aplicarPadrao() {
+    var usar = $('pf-padrao').checked;
+    var pad = aloc.padroes[$('pf-tol').value];
+    $('pf-tab').querySelectorAll('input').forEach(function (i) {
+      if (usar) { i.value = pad[i.dataset.k][i.dataset.t === 'min' ? 0 : 1]; }
+      i.disabled = usar;
+    });
+  }
+  $('pf-tol').addEventListener('change', aplicarPadrao);
+  $('pf-padrao').addEventListener('change', aplicarPadrao);
+  document.addEventListener('click', function (e) { if (e.target.closest('[data-modal="modal-perfil"]')) { abrirPerfil(); } });
+  $('pf-salvar').addEventListener('click', function () {
+    var faixas = {};
+    if (!$('pf-padrao').checked) {
+      $('pf-tab').querySelectorAll('input').forEach(function (i) {
+        faixas[i.dataset.k] = faixas[i.dataset.k] || [0, 0];
+        faixas[i.dataset.k][i.dataset.t === 'min' ? 0 : 1] = Number(i.value);
+      });
+    }
+    var fd = new FormData();
+    fd.append('csrf', window.CSRF);
+    fd.append('dados', JSON.stringify({ tolerancia: $('pf-tol').value, reserva_meses: Number($('pf-reserva').value), faixas: faixas }));
+    fetch('api_cenario_perfil.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (!x.ok) { $('pf-erro').textContent = x.j.erro || 'Não foi possível salvar.'; return; }
+        $('modal-perfil').classList.remove('show');
+        ERP.toast.show('Perfil salvo.', 'success');
+        carregar();
+      })
+      .catch(function (e) { $('pf-erro').textContent = 'Falha ao salvar: ' + e.message; });
+  });
+
   function renderDia(dia) {
     if (!dia) {
       $('c-dia-info').textContent = '';
@@ -143,7 +229,7 @@
       .then(function (r) { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
       .then(function (d) {
         rotulos = d.rotulos;
-        renderKpis(d); renderDimensoes(d.risco); renderDolar(d.risco, d.indicadores); renderDia(d.dia); renderPercebida(d.percebida); renderHistorico(d);
+        renderKpis(d); renderDimensoes(d.risco); renderDolar(d.risco, d.indicadores); renderAloc(d.alocacao); renderDia(d.dia); renderPercebida(d.percebida); renderHistorico(d);
         $('c-carregando').classList.add('hidden');
         $('c-conteudo').classList.remove('hidden');
       })

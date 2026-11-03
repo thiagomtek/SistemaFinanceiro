@@ -11,6 +11,19 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.17.0', 'build' => '20261103.10', 'data' => '03/11/2026', 'hora' => '14:55',
+                'titulo' => 'Sugestões por classe de ativo (fase 3): ações, renda fixa de prazo, imobiliário, dólar e reserva',
+                'destaque' => 'A tela Cenário e risco compara o que você tem em cada classe com a sua faixa de referência e com o momento (juros, inflação, Tesouro e notícias), sem indicar produtos.',
+                'categorias' => array(
+                    array('nome' => 'Novidades', 'icone' => 'fa-star', 'cor' => '#16a34a', 'itens' => array(
+                        array('titulo' => 'Sugestões por classe', 'descricao' => 'Seis classes (pós-fixado e caixa, renda fixa de prazo, ações, imobiliário, exterior e dólar, outros), cada uma com a posição atual, a faixa de referência, os fatores do momento com o motivo e uma indicação: aumentar, manter, reduzir ou aguardar.'),
+                        array('titulo' => 'Reserva de emergência primeiro', 'descricao' => 'Calcula quantos meses de despesas você tem em liquidez diária. Com a reserva abaixo do alvo, a tela não sugere aumentar risco.'),
+                        array('titulo' => 'Perfil e faixas editáveis', 'descricao' => 'Você escolhe a tolerância a risco (conservador, moderado ou arrojado), a reserva alvo e ajusta as faixas de cada classe. As faixas padrão são só um ponto de partida.'),
+                        array('titulo' => 'Tesouro e imóvel para aluguel', 'descricao' => 'Mostra as taxas atuais do Tesouro IPCA+ e Prefixado e a inflação implícita entre eles, e quanto o aluguel precisa render para um imóvel empatar com a renda fixa depois do imposto.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.16.0', 'build' => '20261103.9', 'data' => '03/11/2026', 'hora' => '14:44',
                 'titulo' => 'Cenário e risco: inflação, dólar, notícias do dia e histórico de risco (fase 2)',
                 'destaque' => 'Nova tela Cenário e risco: nível de risco do patrimônio em seis dimensões, juro real, inflação percebida, sinal sobre dolarizar e a leitura diária das notícias, com histórico mensal.',

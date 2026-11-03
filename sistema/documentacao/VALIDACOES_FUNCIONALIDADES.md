@@ -637,3 +637,25 @@ Pendências / ressalvas:
 - O risco de ações, FII, fundos e cripto lançados como manuais não é medido; marcação a mercado de pré-fixados não é calculada; o limite do FGC é estimativa.
 - A leitura por IA se baseia em títulos de manchetes (não nas matérias) e a IA pode falhar (já visto uma vez): há nova tentativa na rodada seguinte.
 - Não conferido com a sessão real do usuário nem com os dados reais de produção (as tabelas novas ainda não existem lá).
+
+## v1.17.0 — sugestões por classe de ativo, fase 3 (RN-49) (build 20261103.10) — 03/11/2026 14:55
+
+**Status: validada com ressalvas.**
+
+Arquivos novos: `sistema/servicos/AlocacaoService.php`, `sistema/api_cenario_perfil.php`, `sistema/certs/globalsign_root_r46.pem`, `tools/ci/testes_alocacao.php`, `tools/ci/mocks_cenario.php` (mocks compartilhados, extraídos do `testes_cenario.php`). Alterados: `InflacaoService.php` (taxas do Tesouro, `cenario_http_get` com raiz de confiança por endereço), `RiscoService.php` (foto de risco guarda o sinal por classe), `cenario.php`, `cenario.js`, `api_cenario.php`, `PermissaoService.php`, `bootstrap.php`, `financeiro.css`, `.github/workflows/ci.yml`, documentação, `config_versao.php`, `config_novidades.php`. **Sem alteração de banco**: o perfil fica em `parametros`.
+
+Escopo combinado com o Thiago: sugestões por classe de ativo (ações, dólar, fundos, aluguel, imóvel), com decisões do sistema explicadas. Decisões de desenho: indicações por classe e não por produto; faixas de referência editáveis (a política é dele); reserva de emergência antes de qualquer aumento de risco; cada fator vale ±1 e aparece com o motivo.
+
+Verificado:
+- Todas as suítes no PHP 7.4 passaram; o `testes_alocacao.php` cobre: taxas do Tesouro (vencimento mais próximo de 3 e 6 anos, vírgula decimal, linha mais antiga e título vencido ignorados, inflação implícita), classificação (dólar manda sobre o tipo), perfil (padrões, validações e persistência), reserva (liquidez diária × média de despesas), fatores e pontos por classe, trava pela reserva abaixo do alvo, regras de sinal, retorno mínimo do aluguel e a foto de risco com os sinais.
+- Verificação real que achou um defeito: a coleta do Tesouro falhava no PHP (`SSL certificate problem`) porque a cadeia termina na GlobalSign Root R46, que o pacote de certificados da imagem não tem. Em vez de desligar a verificação, a raiz pública foi incluída e vale só para esse endereço; a impressão digital SHA-256 (`4F:A3:12:6D:...:40:C9`) foi conferida contra a loja do sistema e o site da GlobalSign, e a cadeia valida usando só essa raiz. Também troquei a leitura do CSV (14,6 MB) para linha a linha: pico de 28 MB e 11 s.
+- Dados reais em instância local descartável (PHP 7.4, SQLite): rotina com 5 fontes sem erro; Tesouro de 30/10/2026: IPCA+ 2032 a 7,89% acima da inflação, Prefixado 2032 a 15,38%, inflação implícita de 6,94% ao ano contra IPCA esperado de 4,84%. A seção renderizou (seis cartões com faixa visual, Tesouro, imóvel), e o modal de perfil abriu, trocou as faixas ao mudar a tolerância, recusou faixa inválida com mensagem e salvou o perfil válido.
+
+Pendências / ressalvas:
+- **Ainda não publicado** (sem mudança de banco; só trocar o `fin_app`).
+- As faixas padrão são genéricas e não foram revisadas por profissional habilitado; a tela avisa e deixa editar.
+- A indicação é regra simples: não conhece objetivos, prazo, impostos nem bens fora do sistema, não mede o risco de ações, FII e fundos lançados à mão e não calcula marcação a mercado.
+- A reserva só considera renda fixa não pré-fixada com liquidez diária e contas positivas.
+- Preço de venda de imóveis não existe no sistema (só o retorno mínimo do aluguel).
+- Não conferido com a sessão real do usuário nem com os dados reais de produção.
+
