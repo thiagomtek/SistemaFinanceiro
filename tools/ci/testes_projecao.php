@@ -148,7 +148,7 @@ igual($pr['serie'][1]['receitas_mes'], $pr['serie'][1]['receitas'], 'meses segui
 igual($pr['serie'][1]['realizado']['receitas'], 0, 'meses seguintes não têm realizado');
 igual($m0['saldo'], saldo_total_contas() + 50 - 200 - ($m0['aporte']), 'saldo continua partindo do saldo de hoje, sem contar o realizado de novo');
 
-echo "== a linha do mes fecha: receitas - despesas - faturas +/- aplicacoes e resgates = resultado do mes\n";
+echo "== RN-42: aplicar e resgatar nao entram no resultado do mes (so trocam dinheiro de lugar)\n";
 $invT = q_insert('INSERT INTO investimentos (perfil_id, nome, tipo, instituicao, indexador, percentual_cdi, tributacao) VALUES (?,?,?,?,?,?,?)', [perfil_id(), 'CDB teste', 'renda_fixa', 'Banco', 'manual', 100, 'nenhuma']);
 rf_aplicar($conta, $invT, 20000, $iniMes, true);
 rf_aplicar($conta, $invT, 300, $fimMes, false);
@@ -156,7 +156,9 @@ $pi = projetar(3, false, 0.0);
 $mi = $pi['serie'][0];
 igual($mi['realizado']['aplicacoes'], 20000, 'aplicacao ja feita aparece no realizado');
 igual($mi['invest_mes'], -20300, 'aplicacoes do mes = 20.000 feitas + 300 agendadas (saem da conta)');
-igual($mi['resultado_mes'], $mi['receitas_mes'] - $mi['despesas_mes'] - $mi['faturas_mes'] + $mi['invest_mes'], 'resultado do mes = receitas - despesas - faturas + aplicacoes/resgates');
+igual($mi['resultado_mes'], 5050 - 500 - 700, 'resultado do mes = receitas - despesas - faturas, sem as aplicacoes (20.300) que saem da conta');
+igual($mi['resultado_mes'], $mi['receitas_mes'] - $mi['despesas_mes'] - $mi['faturas_mes'], 'a linha fecha com as colunas mostradas');
+igual($mi['resultado'], 50 - 200 - 300, 'o fluxo que mexe no saldo da conta continua descontando a aplicacao agendada');
 igual($pi['serie'][1]['invest_mes'], 0, 'mes sem movimento de investimento: coluna zerada');
 
 echo "\n" . ($falhas ? "$falhas FALHA(S)\n" : "TODOS OS TESTES PASSARAM\n");

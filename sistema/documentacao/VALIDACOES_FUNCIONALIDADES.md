@@ -559,3 +559,18 @@ Verificado:
 - Tela em instância local descartável (PHP 7.4, SQLite, usuário de teste): 11 colunas no cabeçalho e na linha, valor da coluna −R$ 25.598,42, resultado −R$ 14.569,82 batendo com a conta, tooltip do realizado.
 
 Pendências / ressalvas: ainda não publicado no servidor; gráfico não alterado; tela não conferida com a sessão real do usuário.
+
+## v1.14.4 — resultado da projeção sem aplicações e resgates (RN-42) (build 20261103.5) — 03/11/2026 13:48
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/servicos/ProjecaoService.php`, `sistema/projecao.php`, `sistema/assets/js/projecao.js`, `tools/ci/testes_projecao.php`, `sistema/documentacao/REQUISITOS_E_REGRAS_DE_NEGOCIO.md`, `sistema/config_versao.php`, `sistema/config_novidades.php`.
+
+Motivo: pedido do Thiago — o resultado negativo de novembro (−R$ 9.517,03) dava falsa impressão de perda, porque descontava R$ 25.598,42 aplicados em investimento. Interesse é conta corrente + investimentos juntos. Regra anterior e nova em RN-42.
+
+Verificado:
+- `tools/ci/testes_projecao.php` (PHP 7.4): resultado do mês = receitas − despesas − faturas mesmo com aplicação feita (20.000) e agendada (300); o fluxo `resultado` que alimenta o saldo continua descontando a aplicação agendada; blocos anteriores (RN-40, RN-41, RN-32) intactos.
+- Tela em instância local descartável (PHP 7.4, SQLite, usuário de teste): 10 colunas no cabeçalho e na linha; com receita de R$ 11.800 e aplicação de R$ 25.598,42, o resultado mostra R$ 11.028,60 (11.800,00 − 771,40) e o tooltip informa o valor aplicado; sem erro de JavaScript.
+- Dados reais de novembro (leitura): +R$ 16.081,39 esperado = 29.381,23 − 3.667,77 − 9.632,07.
+
+Pendências / ressalvas: ainda não publicado nem conferido com a sessão real do usuário; o resultado não inclui o rendimento dos investimentos (aparece na evolução de Investido e Patrimônio); a coluna "Aplic. / resgates" da v1.14.3 foi removida (o campo `invest_mes` segue na API para o tooltip).

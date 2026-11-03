@@ -269,9 +269,10 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
             // totais do mes inteiro (realizado + a realizar); no mes atual o realizado ja esta no saldo e nao entra no fluxo acima
             'receitas_mes' => round($entradas + $rl['receitas'], 2), 'despesas_mes' => round($desp[$ym] + $extra_desp + $rl['despesas'], 2),
             'faturas_mes' => round($fat[$ym] + $rl['faturas'], 2),
-            // resgates (+) menos aplicacoes (-) do mes, ja feitos e agendados: e o que fecha a conta receitas - despesas - faturas = resultado
+            // resgates (+) menos aplicacoes (-) do mes, ja feitos e agendados: so trocam dinheiro de lugar entre conta e investimento
             'invest_mes' => round($tr_in[$ym] - $tr_out[$ym] + $rl['resgates'] - $rl['aplicacoes'], 2),
-            'resultado_mes' => round($resultadoOp + $rl['receitas'] - $rl['despesas'] - $rl['faturas'] + $rl['resgates'] - $rl['aplicacoes'], 2),
+            // RN-42: resultado do mes = o que entrou menos o que foi gasto (conta + investimentos); aplicar e resgatar nao e gasto nem ganho
+            'resultado_mes' => round(($entradas + $rl['receitas']) - ($desp[$ym] + $extra_desp + $rl['despesas']) - ($fat[$ym] + $rl['faturas']), 2),
             'realizado' => ['receitas' => round($rl['receitas'], 2), 'despesas' => round($rl['despesas'], 2), 'faturas' => round($rl['faturas'], 2),
                 'aplicacoes' => round($rl['aplicacoes'], 2), 'resgates' => round($rl['resgates'], 2)],
             'aporte' => round($aporte, 2), 'aporte_sobra' => round($aporteAuto, 2), 'resultado' => round($resultadoOp, 2), 'saldo' => round($saldo, 2),

@@ -11,6 +11,17 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.14.4', 'build' => '20261103.5', 'data' => '03/11/2026', 'hora' => '13:48',
+                'titulo' => 'Projeção: o resultado do mês não conta mais o que você aplica em investimentos',
+                'destaque' => 'Resultado = receitas − despesas − faturas. Aplicar ou resgatar investimento só muda o dinheiro de lugar, então deixou de aparecer como prejuízo.',
+                'categorias' => array(
+                    array('nome' => 'Melhorias', 'icone' => 'fa-magic', 'cor' => '#2563eb', 'itens' => array(
+                        array('titulo' => 'Resultado do mês olha conta e investimentos juntos', 'descricao' => 'Antes, aplicar R$ 25 mil em um CDB deixava o resultado do mês negativo. Agora o resultado mostra só o que entrou e saiu de verdade; o dinheiro aplicado continua visível em Saldo em contas e Investido, e passando o mouse no resultado aparece quanto foi aplicado ou resgatado.'),
+                        array('titulo' => 'Coluna Aplic. / resgates removida', 'descricao' => 'A coluna da versão anterior saiu: o valor agora aparece só ao passar o mouse sobre o resultado. O saldo em contas, o alerta de conta negativa e o investimento da sobra não mudaram.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.14.3', 'build' => '20261103.4', 'data' => '03/11/2026', 'hora' => '13:42',
                 'titulo' => 'Projeção: coluna de aplicações e resgates no detalhe mês a mês',
                 'destaque' => 'O resultado do mês já descontava o que você aplica em investimentos, mas isso não aparecia. Agora a linha fecha: receitas − despesas − faturas ± aplicações/resgates.',
