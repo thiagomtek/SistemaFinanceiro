@@ -9,6 +9,7 @@ function pagina_inicio(string $titulo, string $icone, string $ativo, string $sub
         'VISÃO GERAL' => [
             ['index.php', 'fa-dashboard', '#38bdf8', 'Dashboard'],
             ['projecao.php', 'fa-line-chart', '#22c55e', 'Projeção'],
+            ['cenario.php', 'fa-globe', '#f59e0b', 'Cenário e risco'],
         ],
         'MOVIMENTAÇÕES' => [
             ['lancamentos.php', 'fa-exchange', '#34d399', 'Lançamentos'],

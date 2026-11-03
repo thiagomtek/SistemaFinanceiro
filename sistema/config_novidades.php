@@ -11,6 +11,19 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.16.0', 'build' => '20261103.9', 'data' => '03/11/2026', 'hora' => '14:44',
+                'titulo' => 'Cenário e risco: inflação, dólar, notícias do dia e histórico de risco (fase 2)',
+                'destaque' => 'Nova tela Cenário e risco: nível de risco do patrimônio em seis dimensões, juro real, inflação percebida, sinal sobre dolarizar e a leitura diária das notícias, com histórico mensal.',
+                'categorias' => array(
+                    array('nome' => 'Novidades', 'icone' => 'fa-star', 'cor' => '#16a34a', 'itens' => array(
+                        array('titulo' => 'Risco consolidado', 'descricao' => 'Juros, inflação, moeda, concentração, liquidez e cenário externo, cada uma com nível de 1 a 5 e o motivo com números, e um nível geral.'),
+                        array('titulo' => 'Inflação real e percebida', 'descricao' => 'IPCA, INPC, Focus e juro real (CDI menos IPCA); itens do IPCA que sobem acima do índice (aluguel, plano de saúde, carro, passagem aérea...), reajustes dos seus gastos recorrentes e o IPCA da sua cesta.'),
+                        array('titulo' => 'Dolarização', 'descricao' => 'Mostra quanto do patrimônio está em dólar e um sinal explicado (fatores a favor e contra) sobre comprar dólar ou investir no exterior. Em Investimentos há o novo campo Exposição cambial.'),
+                        array('titulo' => 'Notícias do dia e histórico', 'descricao' => 'Todo dia o sistema coleta manchetes de juros, inflação, fiscal, política, câmbio, bolsa, imóveis e exterior, e uma IA resume e classifica o risco, sem receber nenhum dado seu. Cada mês fecha com o que aconteceu e o que se esperava, para comparar passado, presente e futuro.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.15.0', 'build' => '20261103.8', 'data' => '03/11/2026', 'hora' => '14:08',
                 'titulo' => 'Projeção: risco do patrimônio frente à Selic (fase 1)',
                 'destaque' => 'A Projeção mostra quanto o patrimônio ao fim do horizonte muda se a Selic cair ou subir 2 e 4 pontos percentuais, e como cada investimento reage.',

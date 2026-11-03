@@ -256,3 +256,23 @@ a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .info-media-corpo p { margin: 0 0 8px; }
 .info-media-corpo ol { margin: 0 0 8px; padding-left: 18px; }
 .info-media-corpo li { margin-bottom: 6px; }
+
+/* cenario e risco */
+.dim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.dim-card { border: 1px solid #e2e8f0; border-left: 4px solid #94a3b8; border-radius: 8px; padding: 10px 12px; font-size: 13px; background: #fff; }
+.dim-card.nv-1, .dim-card.nv-2 { border-left-color: #16a34a; }
+.dim-card.nv-3 { border-left-color: #f59e0b; }
+.dim-card.nv-4, .dim-card.nv-5 { border-left-color: #dc2626; }
+.dim-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.dim-motivo { color: #475569; line-height: 1.45; }
+.lista-fatores { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; list-style: none; padding-left: 4px; }
+.lista-fatores li { margin-bottom: 4px; }
+.tema-dia { border-top: 1px solid #e2e8f0; padding: 8px 0; }
+.tema-dia > summary { cursor: pointer; list-style: none; font-size: 13.5px; }
+.tema-dia > summary::-webkit-details-marker { display: none; }
+.lista-manchetes { margin: 4px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.5; }
+.mes-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; font-size: 13px; background: #fff; }
+.mes-card p { margin: 6px 0 0; }
+.mes-titulo { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.rot-tempo { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-right: 6px; }
+.rot-tempo.futuro { color: #2563eb; }

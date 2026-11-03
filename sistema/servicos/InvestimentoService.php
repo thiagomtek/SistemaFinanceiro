@@ -234,11 +234,12 @@ function investimento_salvar(array $d, int $id = 0): int
     $venc = parse_data($d['data_vencimento'] ?? '') ?: null;
     $inst = trim((string) ($d['instituicao'] ?? '')) ?: null;
     $tipo = inv_tipo_legado($produto);
+    $moeda = ($d['moeda'] ?? 'BRL') === 'USD' ? 'USD' : 'BRL';
     if ($id && pertence_ao_perfil('investimentos', $id)) {
-        q('UPDATE investimentos SET nome=?, tipo=?, instituicao=?, taxa_anual=?, indexador=?, percentual_cdi=?, tributacao=?, data_vencimento=?, liquidez=? WHERE id=? AND perfil_id=?',
-            [$nome, $tipo, $inst, $taxa, $indexador, $pct, $trib, $venc, $liq, $id, perfil_id()]);
+        q('UPDATE investimentos SET nome=?, tipo=?, instituicao=?, taxa_anual=?, indexador=?, percentual_cdi=?, tributacao=?, data_vencimento=?, liquidez=?, moeda=? WHERE id=? AND perfil_id=?',
+            [$nome, $tipo, $inst, $taxa, $indexador, $pct, $trib, $venc, $liq, $moeda, $id, perfil_id()]);
         return $id;
     }
-    return q_insert('INSERT INTO investimentos (perfil_id, nome, tipo, instituicao, taxa_anual, indexador, percentual_cdi, tributacao, data_vencimento, liquidez) VALUES (?,?,?,?,?,?,?,?,?,?)',
-        [perfil_id(), $nome, $tipo, $inst, $taxa, $indexador, $pct, $trib, $venc, $liq]);
+    return q_insert('INSERT INTO investimentos (perfil_id, nome, tipo, instituicao, taxa_anual, indexador, percentual_cdi, tributacao, data_vencimento, liquidez, moeda) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+        [perfil_id(), $nome, $tipo, $inst, $taxa, $indexador, $pct, $trib, $venc, $liq, $moeda]);
 }

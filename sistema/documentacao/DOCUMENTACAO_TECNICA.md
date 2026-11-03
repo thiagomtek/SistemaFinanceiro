@@ -26,6 +26,8 @@ Usuário → Tailscale → Caddy (HTTPS) → fin_app (PHP/Apache, 172.17.0.1:809
 | `servicos/InvestimentoService.php` | Aportes, resgates, rendimentos |
 | `servicos/ProjecaoService.php` | Projeção de saldo e patrimônio |
 | `servicos/RiscoService.php` | Risco do patrimônio frente à Selic: cenários (projeção com o CDI deslocado) e exposição por tipo de rendimento e por instituição (RN-44); API `api_projecao_risco.php` |
+| `servicos/InflacaoService.php` | Inflação real e percebida: IPCA/INPC/dólar (BCB), IPCA por grupo e item (IBGE/SIDRA), Focus, juro real, reajustes recorrentes e cesta do usuário (RN-45, RN-46) |
+| `servicos/CenarioService.php` | Cenário econômico: manchetes RSS, leitura por IA (Gemini, só manchetes e indicadores públicos), dia, fechamento mensal e rotina `cenario_atualizar_tudo` (RN-48) |
 | `servicos/DashboardService.php` | Agregações do dashboard |
 | `servicos/ImportacaoService.php` / `XlsxReaderService.php` | Leitura e aplicação de planilhas |
 | `servicos/PerfilService.php` | Usuário e perfil interno (um por usuário) |
@@ -114,3 +116,12 @@ Aviso no celular e no navegador com o aplicativo fechado, no mesmo modelo do ERP
 - **Biblioteca**: instalada em estágio próprio do `Dockerfile` (`composer:2.2`) e copiada para `/var/www/vendor`, fora do DocumentRoot; a imagem final não leva o Composer. Sem a biblioteca ou sem as chaves, `push_disponivel()` é falso: o push some da tela e o resto do sistema segue igual (CI em `php:7.4-cli` não tem a biblioteca e usa o simulador `FIN_PUSH_MOCK`).
 - **Gerar as chaves** (uma vez; colocar no `.env` da VM sem imprimir): `docker compose run --rm --no-deps --entrypoint php fin_app -r 'require "/var/www/vendor/autoload.php"; print_r(Minishlink\WebPush\VAPID::createVapidKeys());'`. Trocar as chaves invalida os aparelhos já cadastrados (eles voltam a assinar no próximo acesso, no máximo 1 vez por dia).
 - **iPhone/iPad**: só recebem push com o aplicativo instalado na tela inicial (iOS 16.4+).
+
+## Cenário e risco (v1.16.0)
+
+- **Telas e APIs:** `cenario.php` (módulo de permissão *Projeção*), `api_cenario.php` (GET, tudo da tela), `api_cenario_atualizar.php` (POST com CSRF, no máximo 1 vez a cada 30 minutos), `assets/js/cenario.js`.
+- **Rotina diária:** `cron_cenario.php` (só CLI; `--forcar` refaz a leitura do dia). Agendamento no `crontab` do host, no mesmo padrão dos avisos: `0 7 * * * docker exec fin_app php /var/www/html/sistema/cron_cenario.php >> /home/thiago/cron_cenario_financeiro.log 2>&1` e uma segunda tentativa `0 12 * * *` (refaz a IA só se o dia ficou sem ela). O arquivo `cron_*.php` já é bloqueado na web pelo Apache.
+- **Tabelas (globais, como `indices`):** `cenario_noticias`, `cenario_diario`, `cenario_mensal`; **por perfil:** `risco_snapshots`; coluna nova `investimentos.moeda`. SQL em `sql/alteracoes/20261103_cenario_risco.sql`.
+- **IA e privacidade:** usa a chave `GEMINI_API_KEY` já existente no `fin_app` (nunca no repositório). O prompt contém só manchetes públicas e indicadores públicos. Em testes, `$GLOBALS['FIN_IA_MOCK']`, `FIN_HTTP_MOCK` e `FIN_BCB_MOCK` substituem a rede e a IA.
+- **Testes:** `tools/ci/testes_cenario.php` e `testes_risco.php` (no CI).
+

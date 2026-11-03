@@ -20,7 +20,8 @@ const PAPEIS = ['admin' => 'Administrador', 'editor' => 'Editor', 'leitor' => 'L
 const NIVEIS = ['nenhum' => 'Sem acesso', 'ver' => 'Só ver', 'editar' => 'Ver e editar'];
 /** Arquivo da tela => modulo. Telas fora desta lista (perfil, logout, notificacoes) exigem apenas login. */
 const PAGINA_MODULO = [
-    'index.php' => 'dashboard', 'projecao.php' => 'projecao', 'api_projecao.php' => 'projecao',
+    'index.php' => 'dashboard', 'projecao.php' => 'projecao', 'api_projecao.php' => 'projecao', 'api_projecao_risco.php' => 'projecao',
+    'cenario.php' => 'projecao', 'api_cenario.php' => 'projecao', 'api_cenario_atualizar.php' => 'projecao',
     'lancamentos.php' => 'lancamentos', 'anexo.php' => 'lancamentos', 'contas.php' => 'contas',
     'cartoes.php' => 'cartoes', 'fatura.php' => 'cartoes', 'categorias.php' => 'categorias',
     'investimentos.php' => 'investimentos', 'api_resgate_previa.php' => 'investimentos', 'api_investimento_painel.php' => 'investimentos',
