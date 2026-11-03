@@ -574,3 +574,30 @@ Verificado:
 - Dados reais de novembro (leitura): +R$ 16.081,39 esperado = 29.381,23 − 3.667,77 − 9.632,07.
 
 Pendências / ressalvas: ainda não publicado nem conferido com a sessão real do usuário; o resultado não inclui o rendimento dos investimentos (aparece na evolução de Investido e Patrimônio); a coluna "Aplic. / resgates" da v1.14.3 foi removida (o campo `invest_mes` segue na API para o tooltip).
+
+## v1.14.5 — opção e explicação da média de gastos avulsos na projeção (build 20261103.6) — 03/11/2026 13:53
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/projecao.php`, `sistema/assets/js/projecao.js`, `sistema/assets/css/financeiro.css`, `sistema/servicos/ProjecaoService.php`, `tools/ci/testes_projecao.php`, `sistema/config_versao.php`, `sistema/config_novidades.php`.
+
+Mudança só de interface; nenhuma regra de negócio nem cálculo foi alterado. O checkbox "Incluir média histórica de gastos avulsos" passou a ser o campo "Média de gastos avulsos" (rótulo em cima, caixa de 38px como os demais filtros), e foi incluída uma faixa com a média mensal atual (despesas e receitas) que abre uma explicação baseada no código de `projetar()` (RN-28, RN-32, RN-41 e RN-25). O serviço devolve `media_meses` (os 3 meses completos considerados).
+
+Verificado:
+- `tools/ci/testes_projecao.php` (PHP 7.4): passou, com nova verificação de `media_meses` (3 meses, o último é o mês passado).
+- Tela em instância local descartável (PHP 7.4, SQLite, usuário de teste): campo alinhado aos demais, faixa com "despesas R$ 300,00 por mês · receitas R$ 100,00 por mês", meses "ago/26, set/26, out/26", explicação abre e fecha, sem erro de JavaScript.
+
+Pendências / ressalvas: não publicado ainda; conferido só na largura de ~800 px da instância local (o filtro quebra em linhas pelo CSS existente); não visto com a sessão real do usuário.
+
+## v1.14.6 — rendimento esperado por mês na projeção (RN-43) (build 20261103.7) — 03/11/2026 13:56
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/servicos/ProjecaoService.php`, `sistema/projecao.php`, `sistema/assets/js/projecao.js`, `tools/ci/testes_projecao.php`, `sistema/documentacao/REQUISITOS_E_REGRAS_DE_NEGOCIO.md`, `sistema/config_versao.php`, `sistema/config_novidades.php`. Este pacote inclui também a v1.14.5 (campo e explicação da média de gastos avulsos), ainda não publicada quando esta foi feita.
+
+Verificado:
+- `tools/ci/testes_projecao.php` (PHP 7.4): novo bloco RN-43 com CDB a 100% do CDI e aplicação agendada de R$ 10.000 no dia 1 do mês seguinte; o rendimento do mês e do mês seguinte batem com a fórmula calculada à parte (dias úteis x CDI diário projetado), o mês anterior à aplicação fica zerado, o resgate agendado reduz o rendimento seguinte sem virar rendimento negativo. Blocos anteriores intactos; domínio, investimentos e lint também passaram.
+- Dados reais de produção (leitura, código novo em cópia temporária dentro do `fin_app`, nada gravado): rendimento de R$ 1.039,58 em nov/26 a R$ 2.259,84 em out/27, coerente com cerca de R$ 106 mil a 13,65% a.a. Conferência de fechamento: investido no fim − investido hoje (R$ 99.442,31) = rendimentos + aportes futuros (R$ 99.374,11); a diferença de R$ 68,20 é o reajuste de −R$ 68,23 do Itaú feito hoje, que fica dentro do rendimento de novembro (RN-37).
+- Tela em instância local descartável (PHP 7.4, SQLite, usuário de teste): cabeçalho e linhas com 11 colunas, coluna Rendimento entre Resultado e Investido na sobra, sem erro de JavaScript (o investimento de teste é manual, então mostra "—").
+
+Pendências / ressalvas: rendimento é bruto (sem IR/IOF); o rendimento de novembro inclui o reajuste de −R$ 68,23 do Itaú; não visto com a sessão real do usuário; ainda não publicado.

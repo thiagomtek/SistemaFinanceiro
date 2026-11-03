@@ -241,3 +241,18 @@ a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-v
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
   .kpi:hover { transform: none; }
 }
+
+/* projecao: opcao (checkbox) no mesmo formato dos demais campos do filtro e bloco "como a media e calculada" */
+.filtros .opcao-caixa { display: flex; align-items: center; gap: 8px; height: 38px; margin: 0; padding: 0 12px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13.5px; font-weight: 600; color: #1e293b; cursor: pointer; white-space: nowrap; }
+.filtros .opcao-caixa input { width: auto; margin: 0; }
+.filtros .opcao-caixa:hover { border-color: #94a3b8; }
+.info-media { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb; border-radius: 8px; margin: -6px 0 18px; font-size: 13px; color: #334155; }
+.info-media > summary { padding: 10px 14px; cursor: pointer; list-style: none; }
+.info-media > summary::-webkit-details-marker { display: none; }
+.info-media > summary .fa { color: #2563eb; }
+.info-media .info-media-link { color: #2563eb; text-decoration: underline; margin-left: 6px; white-space: nowrap; }
+.info-media[open] .info-media-link { display: none; }
+.info-media-corpo { padding: 0 14px 12px 36px; line-height: 1.5; }
+.info-media-corpo p { margin: 0 0 8px; }
+.info-media-corpo ol { margin: 0 0 8px; padding-left: 18px; }
+.info-media-corpo li { margin-bottom: 6px; }

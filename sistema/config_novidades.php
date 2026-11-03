@@ -11,6 +11,27 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.14.6', 'build' => '20261103.7', 'data' => '03/11/2026', 'hora' => '13:56',
+                'titulo' => 'Projeção: rendimento esperado das aplicações, mês a mês, em R$',
+                'destaque' => 'O detalhe mês a mês ganhou a coluna Rendimento, com quanto as aplicações devem render em cada mês, em reais.',
+                'categorias' => array(
+                    array('nome' => 'Melhorias', 'icone' => 'fa-magic', 'cor' => '#2563eb', 'itens' => array(
+                        array('titulo' => 'Coluna Rendimento', 'descricao' => 'Mostra o rendimento bruto esperado no mês: os investimentos de hoje rendem pelo CDI e pelo % de cada um, e a sobra investida rende pelo % do CDI escolhido. Aplicar e resgatar não contam como rendimento, e o IR e o IOF só são cobrados no resgate. Passando o mouse, aparece a parte que vem dos aportes da sobra.'),
+                    )),
+                ),
+            ),
+            array(
+                'versao' => '1.14.5', 'build' => '20261103.6', 'data' => '03/11/2026', 'hora' => '13:53',
+                'titulo' => 'Projeção: opção da média de gastos avulsos no filtro e explicação de como ela é calculada',
+                'destaque' => 'A opção de incluir a média de gastos avulsos ganhou um campo no mesmo formato dos demais filtros, e a tela mostra o valor da média e como ela é calculada.',
+                'categorias' => array(
+                    array('nome' => 'Melhorias', 'icone' => 'fa-magic', 'cor' => '#2563eb', 'itens' => array(
+                        array('titulo' => 'Opção da média alinhada ao filtro', 'descricao' => 'O checkbox saiu solto na linha e virou o campo "Média de gastos avulsos", com rótulo e caixa na mesma altura dos outros filtros.'),
+                        array('titulo' => 'Como a média é calculada', 'descricao' => 'Abaixo do filtro, uma faixa mostra a média mensal de despesas e receitas avulsas e, ao abrir, explica os 3 meses considerados, o que entra, o que fica de fora e como a média é somada em cada mês. O cálculo não mudou.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.14.4', 'build' => '20261103.5', 'data' => '03/11/2026', 'hora' => '13:48',
                 'titulo' => 'Projeção: o resultado do mês não conta mais o que você aplica em investimentos',
                 'destaque' => 'Resultado = receitas − despesas − faturas. Aplicar ou resgatar investimento só muda o dinheiro de lugar, então deixou de aparecer como prejuízo.',

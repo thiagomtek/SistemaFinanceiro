@@ -186,15 +186,27 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
         return date('Y-m-t', strtotime($ym . '-01'));
     }, $lista);
     $totBruto = $totLiq = array_fill_keys($datasMes, 0.0);
+    $rendExistentes = array_fill(0, count($datasMes), 0.0); // rendimento bruto esperado por mes dos investimentos que ja existem (RN-43)
+    $fimMesAnterior = date('Y-m-d', strtotime($lista[0] . '-01 -1 day'));
     $porInvest = [];
     $pesoTotal = 0.0;
     $taxaPond = 0.0;
     $temIR = false;
     foreach ($ativos as $i) {
-        $serieInv = rf_serie($i, rf_movs((int) $i['id']), $datasMes, $cdiProj);
+        $movsInv = rf_movs((int) $i['id']);
+        $serieInv = rf_serie($i, $movsInv, array_merge([$fimMesAnterior], $datasMes), $cdiProj);
         $hojeBruto = (float) $i['saldo'];
         $linhas = [];
         foreach ($datasMes as $k => $dm) {
+            // rendimento do mes = saldo no fim do mes - saldo no fim do mes anterior - aplicacoes + resgates do mes (aplicar e resgatar nao e rendimento)
+            $deMes = $k === 0 ? $fimMesAnterior : $datasMes[$k - 1];
+            $fluxoInv = 0.0;
+            foreach ($movsInv as $mv) {
+                if ($mv['data'] > $deMes && $mv['data'] <= $dm) {
+                    $fluxoInv += $mv['tipo'] === 'aporte' ? (float) $mv['valor'] : ($mv['tipo'] === 'resgate' ? -(float) $mv['valor'] : 0.0);
+                }
+            }
+            $rendExistentes[$k] += $serieInv[$dm]['bruto'] - $serieInv[$deMes]['bruto'] - $fluxoInv;
             $totBruto[$dm] += $serieInv[$dm]['bruto'];
             $totLiq[$dm] += $serieInv[$dm]['liquido'];
             $linhas[] = ['label' => mes_label($lista[$k]), 'bruto' => round($serieInv[$dm]['bruto'], 2), 'liquido' => round($serieInv[$dm]['liquido'], 2)];
@@ -209,6 +221,7 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
     $taxaAporte = rf_taxa_anual_efetiva(['indexador' => 'cdi', 'percentual_cdi' => $pct_aporte], $cdiProj);
     $fatorMes = pow(1 + max(0.0, $taxaAporte) / 100, 1 / 12);
     $coortes = []; // indice do mes => valor aportado no fim do mes
+    $aportesBrutoAnt = 0.0;
     $saldo = saldo_total_contas();
     $negativa = null;
     $serie = [];
@@ -258,6 +271,8 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
             $aportesBruto += $valor;
             $aportesLiq += $valor - $imp;
         }
+        $rendAportes = $aportesBruto - $aportesBrutoAnt - ($coortes[$k] ?? 0.0); // rendimento do mes dos aportes da sobra ja feitos
+        $aportesBrutoAnt = $aportesBruto;
         $rl = $k === 0 ? $real : array_fill_keys(array_keys($real), 0.0);
         $dm = $datasMes[$k];
         $investido = $totBruto[$dm] + $aportesBruto;
@@ -275,6 +290,7 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
             'resultado_mes' => round(($entradas + $rl['receitas']) - ($desp[$ym] + $extra_desp + $rl['despesas']) - ($fat[$ym] + $rl['faturas']), 2),
             'realizado' => ['receitas' => round($rl['receitas'], 2), 'despesas' => round($rl['despesas'], 2), 'faturas' => round($rl['faturas'], 2),
                 'aplicacoes' => round($rl['aplicacoes'], 2), 'resgates' => round($rl['resgates'], 2)],
+            'rendimento_mes' => round($rendExistentes[$k] + $rendAportes, 2), 'rendimento_aportes' => round($rendAportes, 2),
             'aporte' => round($aporte, 2), 'aporte_sobra' => round($aporteAuto, 2), 'resultado' => round($resultadoOp, 2), 'saldo' => round($saldo, 2),
             'investido' => round($investido, 2), 'investido_liquido' => round($investidoLiq, 2),
             'patrimonio' => round($saldo + $investido, 2), 'patrimonio_liquido' => round($saldo + $investidoLiq, 2),
@@ -283,7 +299,8 @@ function projetar(int $meses = 12, bool $usar_media = true, float $aporte_mensal
     $alerta = $negativa ? $negativa + ['investido_liquido' => round($totInv['liquido'], 2)] : null;
     return [
         'saldo_atual' => round(saldo_total_contas(), 2), 'investido_atual' => round($totInv['bruto'], 2), 'investido_liquido_atual' => round($totInv['liquido'], 2),
-        'media_despesas' => round($media_desp, 2), 'media_receitas' => round($media_rec, 2), 'cdi_anual' => round($cdiProj, 4),
+        'media_despesas' => round($media_desp, 2), 'media_receitas' => round($media_rec, 2),
+        'media_meses' => array_map(function ($k) use ($mesAtual) { return mes_label(substr(add_meses($mesAtual . '-01', $k), 0, 7)); }, [-3, -2, -1]), 'cdi_anual' => round($cdiProj, 4),
         'pct_aporte' => $pct_aporte, 'taxa_aporte' => round($taxaAporte, 4), 'alerta_negativo' => $alerta,
         'indices' => indices_resumo(), 'investimentos' => $porInvest, 'serie' => $serie,
     ];

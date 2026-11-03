@@ -114,6 +114,7 @@ $avulso('receita', 1500, $impNormal);
 $pm = projetar(3, true);
 igual($pm['media_despesas'], 3000 / 3, 'média de despesas: só os 3.000 avulsos (os 6.000 do histórico ficam de fora) ÷ 3 meses');
 igual($pm['media_receitas'], 1500 / 3, 'média de receitas: a importação comum entra, os 9.000 do histórico não');
+ok(count($pm['media_meses']) === 3 && $pm['media_meses'][2] === mes_label(date('Y-m', strtotime('first day of -1 month'))), 'a média informa os 3 meses completos considerados (o último é o mês passado)');
 
 echo "== RN-41: reajuste de saldo de conta fica fora da media de avulsos\n";
 q('INSERT INTO lancamentos (perfil_id, tipo, descricao, valor, data, efetivado, conta_id, ajuste) VALUES (?,?,?,?,?,?,?,?)',
@@ -160,6 +161,32 @@ igual($mi['resultado_mes'], 5050 - 500 - 700, 'resultado do mes = receitas - des
 igual($mi['resultado_mes'], $mi['receitas_mes'] - $mi['despesas_mes'] - $mi['faturas_mes'], 'a linha fecha com as colunas mostradas');
 igual($mi['resultado'], 50 - 200 - 300, 'o fluxo que mexe no saldo da conta continua descontando a aplicacao agendada');
 igual($pi['serie'][1]['invest_mes'], 0, 'mes sem movimento de investimento: coluna zerada');
+
+echo "== RN-43: rendimento esperado por mes (aplicar e resgatar nao e rendimento)\n";
+$invR = q_insert('INSERT INTO investimentos (perfil_id, nome, tipo, instituicao, indexador, percentual_cdi, tributacao) VALUES (?,?,?,?,?,?,?)', [perfil_id(), 'CDB CDI', 'renda_fixa', 'Banco', 'cdi', 100, 'nenhuma']);
+$d1 = $dia(1, 1);
+rf_aplicar($conta, $invR, 10000, $d1, false);
+$ult = date('Y-m-t', strtotime($d1));
+$ult2 = date('Y-m-t', strtotime($d1 . ' +1 month'));
+$tdi = cdi_dia_de_anual(cdi_anual_atual()) / 100; // meses futuros: sem CDI publicado, usa o CDI anual de hoje em taxa diaria
+$duEntre = function (string $a, string $b): int { // dias uteis em [a, b): o rendimento de um dia entra no saldo do dia seguinte
+    $n = 0;
+    for ($d = $a; $d < $b; $d = add_dias($d, 1)) {
+        if (eh_dia_util($d)) {
+            $n++;
+        }
+    }
+    return $n;
+};
+$pr1 = projetar(4, false, 0.0, null, 0.0); // 0% do CDI nos aportes da sobra: so o investimento acima rende
+igual($pr1['serie'][0]['rendimento_mes'], 0, 'mes anterior a aplicacao: sem rendimento (o saldo parado de investimento manual nao rende)');
+igual($pr1['serie'][1]['rendimento_mes'], 10000 * (pow(1 + $tdi, $duEntre($d1, $ult)) - 1), 'mes da aplicacao: rende so os dias uteis aplicados, e a aplicacao em si nao entra', 0.02);
+$fimM1 = 10000 * pow(1 + $tdi, $duEntre($d1, $ult));
+igual($pr1['serie'][2]['rendimento_mes'], $fimM1 * (pow(1 + $tdi, $duEntre($ult, $ult2)) - 1), 'mes seguinte: rende sobre o saldo do mes anterior', 0.02);
+rf_resgatar($invR, $conta, 3000, add_dias($ult, 10), false);
+$pr2 = projetar(4, false, 0.0, null, 0.0);
+ok($pr2['serie'][2]['rendimento_mes'] > 0 && $pr2['serie'][2]['rendimento_mes'] < $pr1['serie'][2]['rendimento_mes'], 'resgate agendado reduz o saldo que rende, mas o resgate em si nao vira rendimento negativo');
+ok(isset($pr1['serie'][1]['rendimento_aportes']), 'a serie informa a parte do rendimento vinda dos aportes da sobra');
 
 echo "\n" . ($falhas ? "$falhas FALHA(S)\n" : "TODOS OS TESTES PASSARAM\n");
 exit($falhas ? 1 : 0);

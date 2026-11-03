@@ -12,6 +12,11 @@
     var ultimo = s[s.length - 1];
     var menor = s.reduce(function (a, b) { return b.saldo < a.saldo ? b : a; }, s[0]);
 
+    $('p-media-valores').textContent = $('p-media').checked
+      ? 'despesas ' + brl(d.media_despesas) + ' por mês · receitas ' + brl(d.media_receitas) + ' por mês'
+      : 'desligada (a projeção usa só o que está agendado)';
+    $('p-media-meses').textContent = (d.media_meses || []).join(', ');
+
     var patHoje = d.saldo_atual + d.investido_atual;
     var patHojeLiq = d.saldo_atual + d.investido_liquido_atual;
     var delta = function (v) { return (v >= 0 ? '+ ' : '− ') + brl(Math.abs(v)); };
@@ -93,6 +98,7 @@
         '<td class="num"' + jaFeito(x.realizado.despesas) + '>' + brl(x.despesas_mes) + '</td>' +
         '<td class="num"' + jaFeito(x.realizado.faturas) + '>' + brl(x.faturas_mes) + '</td>' +
         '<td class="num' + cls(x.resultado_mes) + '"' + tipInv(x.invest_mes) + '>' + brl(x.resultado_mes) + '</td>' +
+        '<td class="num text-success"' + (x.rendimento_aportes > 0.004 ? ' title="Dos aportes da sobra já feitos: ' + brl(x.rendimento_aportes) + '"' : '') + '>' + (Math.abs(x.rendimento_mes) > 0.004 ? brl(x.rendimento_mes) : '—') + '</td>' +
         '<td class="num">' + (x.aporte > 0 ? brl(x.aporte) : '—') + '</td>' +
         '<td class="num' + cls(x.saldo) + '"><strong>' + brl(x.saldo) + '</strong></td>' +
         '<td class="num">' + brl(x.investido) + '</td>' +
