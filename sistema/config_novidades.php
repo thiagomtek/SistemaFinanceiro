@@ -11,6 +11,18 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.17.1', 'build' => '20261103.11', 'data' => '03/11/2026', 'hora' => '15:06',
+                'titulo' => 'Notícias do cenário: só fontes confiáveis, do Brasil e de economia',
+                'destaque' => 'A leitura diária das notícias passou a recusar portais de fofoca e pouco confiáveis, matérias de outros países em temas do Brasil e assuntos que não são de economia.',
+                'categorias' => array(
+                    array('nome' => 'Correções', 'icone' => 'fa-bug', 'cor' => '#dc2626', 'itens' => array(
+                        array('titulo' => 'Fontes confiáveis', 'descricao' => 'Só entram manchetes de veículos de uma lista de fontes (Valor, InfoMoney, Estadão, Folha, CNN Brasil, Agência Brasil, Reuters, Money Times e outros). Blogs, redes sociais, portais regionais, sites partidários e conteúdo patrocinado ficam de fora.'),
+                        array('titulo' => 'Brasil e economia', 'descricao' => 'Nos temas do Brasil, matéria sobre outro país só entra se tratar também do Brasil, e entretenimento, celebridades e turismo são descartados. O tema Cenário internacional continua aceitando o exterior.'),
+                        array('titulo' => 'IA também descarta', 'descricao' => 'A IA recebe a ordem de apontar manchetes que não tratam do tema, e elas não são usadas. A tela mostra quantas manchetes foram descartadas e por quê.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.17.0', 'build' => '20261103.10', 'data' => '03/11/2026', 'hora' => '14:55',
                 'titulo' => 'Sugestões por classe de ativo (fase 3): ações, renda fixa de prazo, imobiliário, dólar e reserva',
                 'destaque' => 'A tela Cenário e risco compara o que você tem em cada classe com a sua faixa de referência e com o momento (juros, inflação, Tesouro e notícias), sem indicar produtos.',

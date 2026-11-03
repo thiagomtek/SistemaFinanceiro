@@ -659,3 +659,25 @@ Pendências / ressalvas:
 - Preço de venda de imóveis não existe no sistema (só o retorno mínimo do aluguel).
 - Não conferido com a sessão real do usuário nem com os dados reais de produção.
 
+## v1.17.1 — qualidade das notícias do cenário (RN-48a) (build 20261103.11) — 03/11/2026 15:06
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/servicos/CenarioFiltroService.php` (novo), `sistema/servicos/CenarioService.php`, `sistema/assets/js/cenario.js`, `sistema/bootstrap.php`, `tools/ci/mocks_cenario.php`, `tools/ci/testes_cenario.php`, documentação, `config_versao.php`, `config_novidades.php`. Sem alteração de banco (a contagem de descartes vai no JSON do dia).
+
+Problema apontado pelo Thiago: o tema Imóveis trazia notícia de outro país (protesto por moradia em Portugal, compra de casas nos EUA por celebridades) e a leitura usava portais de fofoca ou pouco confiáveis (SB24horas, Tupi FM). Causa: a coleta aceitava qualquer veículo e qualquer assunto que o Google Notícias devolvesse.
+
+Correção em camadas: lista de fontes confiáveis (por domínio, com subdomínios mas sem sufixo parecido, e por nome na falta do domínio; conteúdo patrocinado recusado), filtro de ruído, filtro de país nos temas do Brasil, filtro de tema e descarte pela IA (campo `descartar`), com contagem por motivo guardada e exibida.
+
+Verificado:
+- `tools/ci/testes_cenario.php` (PHP 7.4) passou, com os três casos apontados e outros: Portugal na Agência Brasil recusado por país; SB24horas e Tupi FM recusados por fonte, e a matéria do morango recusada por ruído mesmo vinda de fonte aceita; Fed e Wall Street não contam como outro país; o tema internacional aceita o exterior; subdomínio de fonte aceita vale e sufixo falso não; conteúdo patrocinado (Blue Studio) recusado; descarte pela IA com número inexistente ignorado; nada recusado é gravado.
+- Feed real do Google Notícias (dados de 03/11/2026), duas rodadas: a primeira mostrou defeitos meus, corrigidos (o padrão `imoveis?` não reconhecia "imóvel" no singular e o tema Imóveis ficava quase vazio; notícias do Brasil com "Midterms" ou "arroba a R$ 400" eram cortadas; conteúdo patrocinado e fofoca de fonte aceita passavam). Na segunda, de 242 manchetes distintas: 85 aceitas, 157 recusadas por fonte, 4 por país (Portugal duas vezes, eleição nos EUA, I bonds dos EUA) e 2 por ruído (mansão de Elvis, Stevie Wonder).
+- Rodada completa com o Gemini de verdade (instância local descartável): 52 manchetes gravadas, a IA descartou mais 4, e **Portugal, Ana Castela, "capital do morango" e Presley não foram gravados**. Veículos gravados: Estadão, Valor, CNN Brasil, Agência Brasil, InfoMoney, Money Times, CartaCapital, Poder360, SBT News e similares.
+
+Pendências / ressalvas:
+- **Ainda não publicado** (sem mudança de banco; trocar o `fin_app` e refazer a leitura do dia com `cron_cenario.php --forcar`).
+- A lista de fontes é uma escolha editorial minha e pode estar estreita ou larga demais (veículos regionais e sites de opinião ficaram de fora; CartaCapital e VEJA entraram); ajusta-se em `CenarioFiltroService.php`.
+- Os filtros usam o título: uma manchete de título genérico de fonte aceita pode passar (a IA descarta parte), e o tema Imóveis tem poucas manchetes, porque o feed traz pouca coisa de veículos da lista.
+- O resumo do Gemini veio uma vez sem acentos; o prompt agora pede acentuação correta.
+- Não conferido com a sessão real do usuário.
+

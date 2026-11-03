@@ -17,9 +17,9 @@ const CENARIO_TEMAS = [
     'inflacao' => ['Inflação', ['inflação IPCA Brasil']],
     'fiscal' => ['Cenário fiscal', ['risco fiscal arcabouço dívida pública', 'Tesouro Direto juros longos']],
     'politica' => ['Política econômica', ['política econômica governo Congresso reforma']],
-    'cambio' => ['Câmbio e dólar', ['dólar câmbio real']],
-    'bolsa' => ['Bolsa e ações', ['Ibovespa bolsa de valores']],
-    'imoveis' => ['Imóveis e aluguel', ['mercado imobiliário preço imóveis aluguel']],
+    'cambio' => ['Câmbio e dólar', ['dólar hoje câmbio real Brasil']],
+    'bolsa' => ['Bolsa e ações', ['Ibovespa B3 bolsa de valores hoje']],
+    'imoveis' => ['Imóveis e aluguel', ['mercado imobiliário Brasil preço imóveis aluguel', 'FipeZap preço de imóveis aluguel Brasil']],
     'internacional' => ['Cenário internacional', ['Federal Reserve juros Estados Unidos economia global']],
 ];
 const CENARIO_MANCHETES_POR_TEMA = 8;
@@ -33,12 +33,15 @@ function risco_nivel_rotulo(?int $n): string
 // ------------------------------------------------------------------- manchetes
 
 /**
- * Manchetes das ultimas 48 h por tema. Um tema que falhar fica vazio; os outros seguem.
+ * Manchetes das ultimas 48 h por tema, ja filtradas (fonte confiavel, sem ruido, no escopo do Brasil e com assunto de economia: ver
+ * CenarioFiltroService). Um tema que falhar fica vazio; os outros seguem.
+ * @param array<string, int>|null $descartes contagem de manchetes recusadas por motivo (fonte, ruido, fora_do_pais, fora_do_tema)
  * @return array<string, list<array{titulo: string, fonte: string, url: string, publicada_em: ?string}>>
  */
-function cenario_buscar_manchetes(): array
+function cenario_buscar_manchetes(?array &$descartes = null): array
 {
     $out = [];
+    $descartes = ['fonte' => 0, 'ruido' => 0, 'fora_do_pais' => 0, 'fora_do_tema' => 0];
     foreach (CENARIO_TEMAS as $tema => [$rotulo, $consultas]) {
         $lista = [];
         $vistos = [];
@@ -63,6 +66,11 @@ function cenario_buscar_manchetes(): array
                     continue;
                 }
                 $vistos[$chave] = true;
+                $motivo = cenario_manchete_recusada($titulo, $fonte, cenario_host(isset($it->source['url']) ? (string) $it->source['url'] : null), $tema);
+                if ($motivo !== null) {
+                    $descartes[$motivo]++;
+                    continue;
+                }
                 $ts = strtotime((string) $it->pubDate);
                 $lista[] = ['titulo' => mb_substr($titulo, 0, 300), 'fonte' => mb_substr($fonte, 0, 120), 'url' => mb_substr($url, 0, 700),
                     'publicada_em' => $ts ? date('Y-m-d H:i:s', $ts) : null];
@@ -114,14 +122,15 @@ function cenario_ler_com_ia(array $manchetes, array $indicadores, ?string &$erro
         return null;
     }
     $temas = implode('|', array_keys(CENARIO_TEMAS));
-    $prompt = "Você é um analista de risco para um investidor pessoa física brasileiro, com carteira de renda fixa. Leia as manchetes de hoje (numeradas) e os indicadores oficiais "
+    $prompt = "Você é um analista de risco para um investidor pessoa física brasileiro, com carteira de renda fixa. Escreva em português do Brasil com a acentuação correta. Leia as manchetes de hoje (numeradas) e os indicadores oficiais "
         . "e escreva uma leitura objetiva do cenário econômico, SEM inventar fatos que não estejam nas manchetes ou nos indicadores e sem recomendar compra ou venda de ativos.\n"
         . "Indicadores oficiais de hoje (JSON): " . json_encode($indicadores, JSON_UNESCAPED_UNICODE) . "\n"
         . "Manchetes por tema:" . implode("\n", $linhas) . "\n\n"
         . "Regras: (1) 'resumo' tem 3 a 5 frases em português do Brasil. (2) Um item em 'temas' para cada tema que tenha manchetes, com 'tema' em {" . $temas . "}, "
         . "'tom' = positivo, neutro ou negativo para quem tem investimentos em CDI, 'nivel_risco' de 1 (baixo) a 5 (alto) e 'resumo' de uma a duas frases. "
         . "(3) 'destaques' lista os NÚMEROS das 1 a 3 manchetes mais relevantes de cada tema. (4) 'atencao' lista até 4 pontos curtos para acompanhar nos próximos dias "
-        . "(ex.: decisão do Copom, divulgação do IPCA). Se as manchetes divergirem, diga que há divergência.";
+        . "(ex.: decisão do Copom, divulgação do IPCA). Se as manchetes divergirem, diga que há divergência. (5) Em 'descartar' liste os NÚMEROS das manchetes que NÃO tratam da economia, "
+        . "das finanças ou da política econômica do tema, que sejam sobre outro país (exceto no tema internacional), entretenimento, celebridades, turismo ou esporte, ou de fonte pouco confiável; não use essas manchetes na leitura.";
     $esquema = [
         'type' => 'OBJECT',
         'properties' => [
@@ -131,6 +140,7 @@ function cenario_ler_com_ia(array $manchetes, array $indicadores, ?string &$erro
                 'destaques' => ['type' => 'ARRAY', 'items' => ['type' => 'INTEGER']],
             ], 'required' => ['tema', 'tom', 'nivel_risco', 'resumo']]],
             'atencao' => ['type' => 'ARRAY', 'items' => ['type' => 'STRING']],
+            'descartar' => ['type' => 'ARRAY', 'items' => ['type' => 'INTEGER']],
         ],
         'required' => ['resumo', 'temas'],
     ];
@@ -140,7 +150,12 @@ function cenario_ler_com_ia(array $manchetes, array $indicadores, ?string &$erro
         $erro = $t->getMessage();
         return null;
     }
-    $res = ['resumo' => mb_substr(trim((string) $r['resumo']), 0, 1500), 'temas' => [], 'atencao' => [], 'modelo' => (string) ($r['_modelo'] ?? '')];
+    $res = ['resumo' => mb_substr(trim((string) $r['resumo']), 0, 1500), 'temas' => [], 'atencao' => [], 'descartadas' => [], 'modelo' => (string) ($r['_modelo'] ?? '')];
+    foreach ((array) ($r['descartar'] ?? []) as $num) {
+        if (isset($ref[(int) $num])) {
+            $res['descartadas'][] = $ref[(int) $num]; // [tema, indice]
+        }
+    }
     foreach ((array) ($r['temas'] ?? []) as $t) {
         $tema = (string) ($t['tema'] ?? '');
         if (!isset(CENARIO_TEMAS[$tema]) || isset($res['temas'][$tema])) {
@@ -149,7 +164,7 @@ function cenario_ler_com_ia(array $manchetes, array $indicadores, ?string &$erro
         $tom = in_array($t['tom'] ?? '', ['positivo', 'neutro', 'negativo'], true) ? $t['tom'] : 'neutro';
         $dest = [];
         foreach ((array) ($t['destaques'] ?? []) as $num) {
-            if (isset($ref[(int) $num]) && $ref[(int) $num][0] === $tema) {
+            if (isset($ref[(int) $num]) && $ref[(int) $num][0] === $tema && !in_array($ref[(int) $num], $res['descartadas'], true)) {
                 $dest[] = $ref[(int) $num][1];
             }
         }
@@ -175,7 +190,8 @@ function cenario_ler_com_ia(array $manchetes, array $indicadores, ?string &$erro
 function cenario_gerar_dia(?string $data = null): array
 {
     $data = $data ?: date('Y-m-d');
-    $manchetes = cenario_buscar_manchetes();
+    $descartes = [];
+    $manchetes = cenario_buscar_manchetes($descartes);
     $total = array_sum(array_map('count', $manchetes));
     if ($total === 0) {
         throw new RuntimeException('Nenhuma manchete foi coletada (sem acesso aos feeds de notícias).');
@@ -194,6 +210,10 @@ function cenario_gerar_dia(?string $data = null): array
         $idsPorTema = [];
         foreach ($manchetes as $tema => $lista) {
             foreach ($lista as $i => $m) {
+                if ($ia && in_array([$tema, $i], $ia['descartadas'], true)) {
+                    $descartes['ia'] = ($descartes['ia'] ?? 0) + 1; // a IA marcou como fora do tema
+                    continue;
+                }
                 $dest = $ia && in_array($i, $ia['temas'][$tema]['destaques'] ?? [], true) ? 1 : 0;
                 $id = q_insert('INSERT INTO cenario_noticias (data, tema, titulo, fonte, url, url_hash, publicada_em, destaque) VALUES (?,?,?,?,?,?,?,?)',
                     [$data, $tema, $m['titulo'], $m['fonte'] ?: null, $m['url'], sha1($m['url']), $m['publicada_em'], $dest]);
@@ -212,14 +232,14 @@ function cenario_gerar_dia(?string $data = null): array
         }
         $resumo = $ia ? $ia['resumo'] : 'A leitura por IA não ficou disponível hoje; as manchetes e os indicadores oficiais foram guardados e o risco usa apenas os dados oficiais.';
         q('REPLACE INTO cenario_diario (data, resumo, temas_json, indicadores_json, origem, modelo) VALUES (?,?,?,?,?,?)',
-            [$data, $resumo, json_encode(['temas' => $temasJson, 'atencao' => $ia['atencao'] ?? []], JSON_UNESCAPED_UNICODE), json_encode($ind, JSON_UNESCAPED_UNICODE),
+            [$data, $resumo, json_encode(['temas' => $temasJson, 'atencao' => $ia['atencao'] ?? [], 'descartadas' => $descartes], JSON_UNESCAPED_UNICODE), json_encode($ind, JSON_UNESCAPED_UNICODE),
                 $ia ? 'ia' : 'sem_ia', $ia['modelo'] ?? null]);
         $pdo->commit();
     } catch (Throwable $t) {
         $pdo->rollBack();
         throw $t;
     }
-    return ['data' => $data, 'origem' => $ia ? 'ia' : 'sem_ia', 'manchetes' => $total, 'temas' => count($ia['temas'] ?? []), 'erro_ia' => $erroIa];
+    return ['data' => $data, 'origem' => $ia ? 'ia' : 'sem_ia', 'manchetes' => $total - (int) ($descartes['ia'] ?? 0), 'temas' => count($ia['temas'] ?? []), 'erro_ia' => $erroIa, 'descartadas' => $descartes];
 }
 
 /** Leitura do dia mais recente ate $ate (padrao hoje), com as manchetes. */
@@ -234,7 +254,7 @@ function cenario_dia(?string $ate = null): ?array
     foreach (q_all('SELECT id, tema, titulo, fonte, url, publicada_em, destaque FROM cenario_noticias WHERE data = ? ORDER BY destaque DESC, publicada_em DESC', [$d['data']]) as $n) {
         $noticias[$n['tema']][] = ['id' => (int) $n['id'], 'titulo' => $n['titulo'], 'fonte' => $n['fonte'], 'url' => $n['url'], 'publicada_em' => $n['publicada_em'], 'destaque' => (int) $n['destaque'] === 1];
     }
-    return ['data' => $d['data'], 'resumo' => $d['resumo'], 'origem' => $d['origem'], 'modelo' => $d['modelo'], 'temas' => $conteudo['temas'] ?? [], 'atencao' => $conteudo['atencao'] ?? [],
+    return ['data' => $d['data'], 'resumo' => $d['resumo'], 'origem' => $d['origem'], 'modelo' => $d['modelo'], 'temas' => $conteudo['temas'] ?? [], 'atencao' => $conteudo['atencao'] ?? [], 'descartadas' => $conteudo['descartadas'] ?? [],
         'indicadores' => json_decode((string) $d['indicadores_json'], true) ?: [], 'noticias' => $noticias];
 }
 
@@ -271,7 +291,7 @@ function cenario_gerar_mensal(string $mes, bool $forcar = false): ?array
     $ia = null;
     $comIa = array_filter($dias, function ($d) { return $d['origem'] === 'ia'; });
     if ($comIa) {
-        $prompt = "Você é um analista de risco para um investidor pessoa física brasileiro, com carteira de renda fixa. Com base APENAS nas leituras diárias abaixo (já resumidas) e nos "
+        $prompt = "Você é um analista de risco para um investidor pessoa física brasileiro, com carteira de renda fixa. Escreva em português do Brasil com a acentuação correta. Com base APENAS nas leituras diárias abaixo (já resumidas) e nos "
             . "indicadores, escreva o fechamento de " . mes_label($mes) . ". Não invente fatos e não recomende compra ou venda de ativos.\n"
             . "Indicadores no início e no fim do mês: " . implode('; ', $variacao) . "\n"
             . ($anterior ? "O que se esperava no mês anterior (perspectiva registrada): " . $anterior['perspectiva'] . "\n" : '')

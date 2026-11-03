@@ -160,6 +160,13 @@
             escapeHtml(n.fonte || '') + (n.publicada_em ? ' · ' + dataBR(n.publicada_em) : '') + '</span></li>';
         }).join('') + '</ul></details>';
     });
+    var ds = dia.descartadas || {};
+    var totalDesc = (ds.fonte || 0) + (ds.ruido || 0) + (ds.fora_do_pais || 0) + (ds.fora_do_tema || 0) + (ds.ia || 0);
+    if (totalDesc > 0) {
+      h += '<p class="text-muted" style="font-size:12px;margin:10px 0 0"><i class="fa fa-filter"></i> Filtro de qualidade: ' + totalDesc + ' manchetes descartadas (' + [
+        ds.fonte ? ds.fonte + ' de fonte fora da lista de veículos confiáveis' : '', ds.fora_do_pais ? ds.fora_do_pais + ' sobre outro país em tema do Brasil' : '', ds.ruido ? ds.ruido + ' de entretenimento, celebridades e afins' : '',
+        ds.fora_do_tema ? ds.fora_do_tema + ' fora de economia, finanças e governo' : '', ds.ia ? ds.ia + ' pela IA, por não tratar do tema' : ''].filter(Boolean).join('; ') + ').</p>';
+    }
     h += '<p class="text-muted" style="font-size:12px;margin:10px 0 0">A IA recebe só as manchetes e os indicadores públicos (nenhum dado seu) e cita as manchetes pelo número; os links vêm da coleta. A leitura se baseia em títulos, não nas matérias completas: abra os links para conferir.</p>';
     $('c-dia').innerHTML = h;
   }

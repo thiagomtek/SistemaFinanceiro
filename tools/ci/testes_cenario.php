@@ -97,15 +97,47 @@ ok($ces['cobertura_pct'] < 50 && !$ces['confiavel'], 'cobertura baixa (muito gas
 echo "== noticias e leitura do dia\n";
 $d = cenario_gerar_dia();
 ok($d['origem'] === 'ia' && $d['manchetes'] > 8 && $d['manchetes'] === (int) q_val('SELECT COUNT(*) FROM cenario_noticias'), 'dia gerado com a leitura da IA e todas as manchetes coletadas gravadas');
+$ds = $d['descartadas'];
+ok($ds['fonte'] === 8 && $ds['ruido'] === 8 && $ds['fora_do_pais'] === 7 && $ds['fora_do_tema'] === 8, 'a coleta descarta, em cada tema, uma manchete de cada motivo (fora_do_pais só nos 7 temas do Brasil) e informa a contagem');
+ok($ds['ia'] === 1, 'a IA também descartou uma manchete (a de número 2); o número inexistente foi ignorado');
+igual((int) q_val("SELECT COUNT(*) FROM cenario_noticias WHERE fonte = 'Blog do Esmael' OR titulo LIKE '%Celebridade%' OR titulo LIKE '%Prefeitura inaugura%'"), 0, 'nenhuma manchete recusada foi gravada', 0);
+igual((int) q_val("SELECT COUNT(*) FROM cenario_noticias WHERE titulo LIKE '%Portugal%' AND tema <> 'internacional'"), 0, 'nenhuma matéria sobre Portugal em tema do Brasil', 0);
+igual((int) q_val("SELECT COUNT(*) FROM cenario_noticias WHERE titulo LIKE '%Portugal%' AND tema = 'internacional'"), 1, 'a mesma matéria aparece no tema internacional', 0);
 $dia = cenario_dia();
+ok(($dia['descartadas']['fonte'] ?? 0) === 8, 'a contagem de descartes fica guardada no dia para a tela');
 ok($dia !== null && $dia['origem'] === 'ia' && count($dia['temas']) === 8, 'oito temas lidos; o tema inválido devolvido pela IA foi ignorado');
 igual($dia['temas']['fiscal']['nivel_risco'], 4, 'nível de risco do tema fiscal');
 ok(count($dia['atencao']) === 1 && $dia['atencao'][0] === 'Decisão do Copom', 'pontos de atenção: o vazio foi descartado');
 $dest = array_filter($dia['noticias']['juros'] ?? [], function ($n) { return $n['destaque']; });
 ok(count($dest) === 1, 'só a manchete 1 do tema vale como destaque; o número 999 inexistente foi ignorado');
 $urls = array_column(q_all('SELECT url FROM cenario_noticias'), 'url');
-ok(count($urls) === count(array_unique($urls)) && count(array_filter($urls, function ($u) { return strpos($u, 'https://exemplo.test/') !== 0; })) === 0, 'todos os links vêm da coleta (a IA não cria endereço) e cada manchete tem o seu');
+ok(count($urls) === count(array_unique($urls)) && count(array_filter($urls, function ($u) { return strpos($u, 'https://exemplo.test/') !== 0 && strpos($u, 'https://ruim.test/') !== 0; })) === 0, 'todos os links vêm da coleta do feed (a IA não cria endereço) e cada manchete tem o seu');
 ok(strpos($dia['noticias']['juros'][0]['url'], 'https://exemplo.test/') === 0, 'o link de cada manchete é o do feed');
+echo "== filtro de manchetes: fonte, ruido, pais e tema (RN-48a)\n";
+$R = function (string $titulo, string $fonte, ?string $dominio, string $tema) { return cenario_manchete_recusada($titulo, $fonte, $dominio, $tema); };
+// os tres casos apontados pelo Thiago
+ok($R('Manifestantes ocupam praças em Portugal por direito à moradia', 'Agência Brasil', 'agenciabrasil.ebc.com.br', 'imoveis') === 'fora_do_pais', 'protesto por moradia em Portugal (mesmo na Agência Brasil) não entra em tema do Brasil');
+ok($R('Ana Castela e Larissa Manoela: compra de casas nos EUA vai além das férias e abre espaço para investimento', 'SB24HORAS', 'sb24horas.com.br', 'imoveis') === 'fonte', 'notícia de celebridades de portal fora da lista de fontes é recusada pela fonte');
+$morango = 'A capital do morango que conquistou espaço entre as cidades brasileiras com melhor qualidade de vida';
+ok($R($morango, 'Tupi FM', 'tupi.fm', 'imoveis') === 'fonte' && $R($morango, 'Exame', 'exame.com', 'imoveis') === 'ruido', 'qualidade de vida em cidades: recusada pela fonte e, mesmo vinda de fonte aceita, pelo filtro de ruído');
+// o que deve continuar entrando
+ok($R('Juros do Tesouro voltam a subir e prefixados superam 15%', 'SpaceMoney', 'spacemoney.com.br', 'fiscal') === null, 'juros do Tesouro (SpaceMoney) entra');
+ok($R('Copom deve cortar Selic nesta reunião, mas dezembro fica em dúvida, diz economista', 'Money Times', 'moneytimes.com.br', 'juros') === null, 'Selic e Copom entram');
+ok($R('Dólar hoje sobe e se aproxima de R$ 5,50; Copom no radar', 'ISTOÉ DINHEIRO', null, 'cambio') === null, 'sem o domínio no feed, a fonte é reconhecida pelo nome');
+ok($R('Dólar fecha em alta após decisão do Fed', 'Reuters', 'reuters.com', 'cambio') === null, 'Fed e Wall Street não contam como "outro país": afetam o dólar e a bolsa do Brasil');
+ok($R('Manifestantes ocupam praças em Portugal por direito à moradia', 'Agência Brasil', 'agenciabrasil.ebc.com.br', 'internacional') === null, 'o tema internacional aceita notícia do exterior');
+ok($R('Preço de imóveis em Madri bate recorde', 'Exame', 'exame.com', 'imoveis') === 'fora_do_pais' && $R('Imóveis em Lisboa disparam e atraem brasileiros', 'Exame', 'exame.com', 'imoveis') === null, 'notícia de outro país só entra se também tratar do Brasil');
+ok($R('Prefeitura inaugura nova praça no centro da cidade', 'Exame', 'exame.com', 'politica') === 'fora_do_tema', 'sem nenhum termo de economia, finanças ou governo, é recusada pelo tema');
+ok($R('Selic em alta', 'Instagram', null, 'juros') === 'fonte' && $R('Selic em alta', 'Blog qualquer', 'blog.exemplo.com', 'juros') === 'fonte', 'sem fonte reconhecida (nem nome nem domínio): recusada');
+ok($R('Bolsa abre em baixa diante de desconfiança fiscal e Midterms nos EUA', 'Metrópoles', 'metropoles.com', 'bolsa') === null, 'bolsa do Brasil que cita eleição nos EUA e tem termo brasileiro (fiscal) entra');
+ok($R('Boi a R$ 400: arroba dispara com dólar, China e ciclo pecuário no limite', 'InfoMoney', 'infomoney.com.br', 'cambio') === null, 'preço em reais com a China no título: o R$ mostra que é do Brasil');
+ok($R('Midterms nos EUA: apuração começa às 20h, mas resultado pode levar dias', 'InfoMoney', 'infomoney.com.br', 'fiscal') === 'fora_do_pais' && $R('Midterms nos EUA: apuração começa às 20h, mas resultado pode levar dias', 'InfoMoney', 'infomoney.com.br', 'internacional') === 'fora_do_tema', 'eleição americana: fora de tema do Brasil e, no internacional, sem termo de economia');
+ok($R('Fundo imobiliário anuncia dividendo recorde e vai à Justiça para revisar aluguéis', 'Money Times', 'moneytimes.com.br', 'imoveis') === null && $R('Preço do imóvel sobe 8% em 12 meses no Brasil', 'Exame', 'exame.com', 'imoveis') === null, '"imóvel" no singular e no plural é reconhecido como tema');
+ok($R('Escritórios têm maior potencial de valorização, diz executivo', 'Estadão Blue Studio', 'estadao.com.br', 'imoveis') === 'fonte', 'conteúdo patrocinado (Blue Studio) é recusado mesmo no domínio de uma fonte aceita');
+ok($R('Stevie Wonder disputa imóvel de US$ 2 milhões com ex-noiva', 'Times Brasil | CNBC', 'cnbc.com', 'imoveis') === 'ruido' && $R('Mansão onde Elvis viveu em Beverly Hills é colocada à venda', 'CNN Brasil', 'cnnbrasil.com.br', 'imoveis') === 'ruido', 'fofoca e mansão de celebridade, mesmo de fonte aceita, são recusadas');
+ok($R('Lula precisa encontrar dupla como Palocci e Meirelles e empoderar, aponta Kassab', 'InfoMoney', 'infomoney.com.br', 'politica') === null, 'política econômica com o presidente no título entra');
+ok(cenario_fonte_confiavel('x', 'noticias.valor.globo.com') && !cenario_fonte_confiavel('x', 'valor.globo.com.malicioso.com') && !cenario_fonte_confiavel('x', 'fakeexame.com'), 'subdomínio de fonte aceita vale, mas domínio parecido (sufixo falso) não');
+
 $n1 = (int) q_val('SELECT COUNT(*) FROM cenario_noticias');
 cenario_gerar_dia();
 igual((int) q_val('SELECT COUNT(*) FROM cenario_noticias'), $n1, 'rodar de novo no mesmo dia refaz sem duplicar manchetes', 0);

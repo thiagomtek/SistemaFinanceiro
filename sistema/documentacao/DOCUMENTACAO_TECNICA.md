@@ -28,6 +28,7 @@ Usuário → Tailscale → Caddy (HTTPS) → fin_app (PHP/Apache, 172.17.0.1:809
 | `servicos/RiscoService.php` | Risco do patrimônio frente à Selic: cenários (projeção com o CDI deslocado) e exposição por tipo de rendimento e por instituição (RN-44); API `api_projecao_risco.php` |
 | `servicos/InflacaoService.php` | Inflação real e percebida: IPCA/INPC/dólar (BCB), IPCA por grupo e item (IBGE/SIDRA), Focus, juro real, reajustes recorrentes e cesta do usuário (RN-45, RN-46) |
 | `servicos/CenarioService.php` | Cenário econômico: manchetes RSS, leitura por IA (Gemini, só manchetes e indicadores públicos), dia, fechamento mensal e rotina `cenario_atualizar_tudo` (RN-48) |
+| `servicos/CenarioFiltroService.php` | Filtros das manchetes (fonte confiável, ruído, país, tema) e a lista editável de fontes (RN-48a) |
 | `servicos/AlocacaoService.php` | Sugestões por classe de ativo: classificação, perfil e faixas, reserva de emergência, fatores do momento, Tesouro e retorno mínimo do aluguel (RN-49); API `api_cenario_perfil.php` (POST com CSRF) salva o perfil |
 | `servicos/DashboardService.php` | Agregações do dashboard |
 | `servicos/ImportacaoService.php` / `XlsxReaderService.php` | Leitura e aplicação de planilhas |

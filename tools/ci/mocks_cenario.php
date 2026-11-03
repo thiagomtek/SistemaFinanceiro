@@ -80,13 +80,26 @@ function cenario_instalar_mocks(): void
         }
         if (strpos($url, 'news.google.com') !== false) {
             parse_str((string) parse_url($url, PHP_URL_QUERY), $q);
-            $busca = (string) ($q['q'] ?? '');
-            $itens = '';
-            for ($i = 1; $i <= 3; $i++) {
-                $itens .= '<item><title>Manchete ' . htmlspecialchars($busca) . ' ' . $i . ' - Fonte ' . $i . '</title><link>https://exemplo.test/' . sha1($busca . $i) . '</link>'
-                    . '<pubDate>' . gmdate('D, d M Y H:i:s', time() - $i * 3600) . ' GMT</pubDate><source url="https://f' . $i . '.test">Fonte ' . $i . '</source></item>';
-            }
-            return '<?xml version="1.0"?><rss version="2.0"><channel><title>x</title>' . $itens . '</channel></rss>';
+        $busca = (string) ($q['q'] ?? '');
+        $itens = '';
+        $bons = [['InfoMoney', 'https://www.infomoney.com.br'], ['Valor Econômico', 'https://valor.globo.com'], ['Exame', 'https://exame.com']];
+        foreach ($bons as $k => [$nome, $site]) {
+            $i = $k + 1;
+            $itens .= '<item><title>Manchete ' . htmlspecialchars($busca) . ' ' . $i . ' - ' . $nome . '</title><link>https://exemplo.test/' . sha1($busca . $i) . '</link>'
+                . '<pubDate>' . gmdate('D, d M Y H:i:s', time() - $i * 3600) . ' GMT</pubDate><source url="' . $site . '">' . $nome . '</source></item>';
+        }
+        // manchetes que os filtros precisam recusar (uma de cada motivo), repetidas em todo tema
+        $ruins = [
+            ['Selic: o palpite de um influenciador - Blog do Esmael', 'Blog do Esmael', 'https://blogdoesmael.com.br'],
+            ['Celebridade compra casa e fala de investimento - InfoMoney', 'InfoMoney', 'https://www.infomoney.com.br'],
+            ['Manifestantes ocupam praças em Portugal por direito à moradia - Agência Brasil', 'Agência Brasil', 'https://agenciabrasil.ebc.com.br'],
+            ['Prefeitura inaugura nova praça no centro da cidade - Exame', 'Exame', 'https://exame.com'],
+        ];
+        foreach ($ruins as $k => [$titulo, $nome, $site]) {
+            $itens .= '<item><title>' . htmlspecialchars($titulo) . '</title><link>https://ruim.test/' . sha1($busca . $titulo) . '</link>'
+                . '<pubDate>' . gmdate('D, d M Y H:i:s', time() - 600) . ' GMT</pubDate><source url="' . $site . '">' . $nome . '</source></item>';
+        }
+        return '<?xml version="1.0"?><rss version="2.0"><channel><title>x</title>' . $itens . '</channel></rss>';
         }
         return null;
     };
@@ -105,7 +118,7 @@ function cenario_instalar_mocks(): void
             $temas[] = ['tema' => $t, 'tom' => $t === 'fiscal' ? 'negativo' : 'neutro', 'nivel_risco' => $n, 'resumo' => 'Resumo de ' . $t, 'destaques' => [1, 999]];
         }
         $temas[] = ['tema' => 'invalido', 'tom' => 'neutro', 'nivel_risco' => 3, 'resumo' => 'ignorar', 'destaques' => []];
-        return ['resumo' => 'Dia de cautela com o risco fiscal.', 'temas' => $temas, 'atencao' => ['Decisão do Copom', '']];
+        return ['resumo' => 'Dia de cautela com o risco fiscal.', 'temas' => $temas, 'atencao' => ['Decisão do Copom', ''], 'descartar' => [2, 99999]];
     };
 
 

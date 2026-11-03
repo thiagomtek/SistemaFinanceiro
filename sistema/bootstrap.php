@@ -72,6 +72,7 @@ require_once __DIR__ . '/servicos/InvestimentoService.php';
 require_once __DIR__ . '/servicos/ProjecaoService.php';
 require_once __DIR__ . '/servicos/RiscoService.php';
 require_once __DIR__ . '/servicos/InflacaoService.php';
+require_once __DIR__ . '/servicos/CenarioFiltroService.php';
 require_once __DIR__ . '/servicos/CenarioService.php';
 require_once __DIR__ . '/servicos/AlocacaoService.php';
 require_once __DIR__ . '/servicos/DashboardService.php';
