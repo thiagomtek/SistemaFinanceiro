@@ -510,3 +510,37 @@ Pendências / ressalvas:
 - Média de despesas avulsas: incluía o "Ajuste de saldo (saldo inicial zerado)" de R$ 5.781,41 de 26/10 (cerca de R$ 1.927 por mês de despesa projetada). Retirado com autorização do Thiago (RN-41): `sql_sem_reajuste_saldo()` na média e no abatimento do mês atual; teste novo em `testes_projecao.php`. O Reajuste de fatura de R$ 369,90 do período continua na média (não autorizado a alterar).
 
 **Publicação da v1.14.1 (03/11/2026):** a cópia de implantação estava igual ao commit anterior nos cinco arquivos alterados. Tag de reversão `sistema-financeiro-fin_app:rollback-1.14.0`, `php -l`, build do `fin_app` e troca só dele com `--no-deps` (`fin_db`, Caddy e ERP intactos). Contêiner: versão 1.14.1, `login.php` 200, `api_projecao.php` sem sessão 401, `projecao.js` publicado com os totais do mês. Sem alteração de banco. Tela de projeção autenticada não vista.
+
+## Revalidação das fórmulas de investimentos (aplicação, resgate e cálculos gerais) — 03/11/2026 11:01
+
+**Status: validada.** Sem alteração de código (versão 1.14.1 mantida).
+
+Arquivos conferidos: `sistema/servicos/RendaFixaService.php` (`rf_simular`, `rf_consumir`, `rf_liquidar`, `rf_previa_resgate`, `rf_previa_resgate_liquido`, `rf_bruto_do_liquido`, `rf_reajustar`).
+
+Verificado:
+- Suítes em PHP 7.4 (`php:7.4-cli`): `testes_investimentos`, `testes_dominio`, `testes_projecao`, `testes_reajustes_mobills`, `testes_p2`, `testes_extrato` — todas passaram.
+- Cálculo independente (reimplementado à parte: lotes, PEPS, rendimento diário, IR e IOF, tabela do IOF digitada da legislação), lendo os dados reais em modo leitura dentro do `fin_app` e comparando com o motor nos 5 investimentos (CDB BV 110%, CDB BV 130%, Itaú CDB DI, Nubank Turbo Croma, Nubank Turbo NuCel): saldo bruto, principal e IR+IOF idênticos (diferença 0,0000).
+- Tabela de IOF (dias 0 a 35) e faixas de IR (1, 179, 180, 181, 359, 360, 361, 719, 720, 721 e 2000 dias) iguais às do cálculo independente.
+- Resgate parcial sobre dois lotes (63 e 10 dias, com IOF): IR 13,8991 e IOF 3,4435, iguais ao cálculo à mão.
+- Ida e volta líquido → bruto → líquido em dois investimentos reais, com 25% e 60% do saldo: líquido devolvido igual ao pedido (centavos).
+- Soma da carteira: rendimento = bruto − aplicado e líquido = bruto − (IR + IOF) em todas as linhas, com diferença de 1 centavo apenas no Nubank Turbo Croma (arredondamento dos componentes).
+
+Achado (dado, não fórmula): o Itaú CDB DI mostra rendimento de −R$ 226,36 por causa do movimento 220, "Reajuste de saldo" de −R$ 256,38 em 29/10/2026. Sem esse reajuste o rendimento simulado seria +R$ 23,53. O resgate de R$ 244,44 só foi gravado em 31/10 (movimento 223), o que sugere que o banco já refletia a saída quando o reajuste foi feito. Não alterado: depende do saldo real do banco.
+
+Pendências / ressalvas: não foi comparado o saldo do Itaú com o app do banco; a validação cobre o cálculo do sistema, não a exatidão dos movimentos digitados.
+
+## v1.14.2 — loop de recarregamento da tela de Investimentos (build 20261103.3) — 03/11/2026 11:13
+
+**Status: validada com ressalvas.**
+
+Arquivos: `sistema/assets/js/inv_painel.js`, `sistema/config_versao.php`, `sistema/config_novidades.php`.
+
+Causa: depois de aplicar, resgatar ou reajustar, a tela volta com `investimentos.php?abrir=ID` e o `inv_painel.js` reabria o painel com `gatilho.click()` no link `<a href="investimentos.php?abrir=ID" data-modal>`. Esse script roda no fim do body, antes do `DOMContentLoaded`, e o handler de `[data-modal]` (com `preventDefault`) do `app.js` só é registrado dentro do `DOMContentLoaded`. Sem o `preventDefault`, o navegador seguia o link e recarregava a mesma URL, em loop. No log de produção havia centenas de `GET investimentos.php?abrir=8` em cerca de 13 segundos, até o Chrome limitar as navegações.
+
+Correção: o painel passa a abrir direto (`modal.classList.add('show')` e `abrir(...)`), sem depender do clique simulado.
+
+Verificado:
+- Reprodução em instância local descartável (PHP 7.4, SQLite, usuário de teste criado só para isso): antes da correção, um POST de aplicação gerou mais de 380 recargas de `?abrir=1`; depois, 1 carga, painel aberto, URL limpa e as 2 movimentações listadas.
+- `lancamentos.js` usa a mesma ideia com `?novo=1`, mas o gatilho tem `href="#"`: sem risco de loop, não alterado.
+
+Pendências / ressalvas: ainda não publicado no servidor; o fluxo com o navegador e a sessão reais do usuário não foi reproduzido (a reprodução foi na instância local).

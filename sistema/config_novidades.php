@@ -11,6 +11,16 @@ if (!function_exists('sistema_obter_novidades')) {
     {
         return array(
             array(
+                'versao' => '1.14.2', 'build' => '20261103.3', 'data' => '03/11/2026', 'hora' => '11:13',
+                'titulo' => 'Investimentos: fim do recarregamento infinito depois de salvar',
+                'destaque' => 'Depois de aplicar, resgatar ou reajustar, a tela de Investimentos volta uma vez só e reabre o painel do investimento, sem entrar em loop.',
+                'categorias' => array(
+                    array('nome' => 'Correções', 'icone' => 'fa-bug', 'cor' => '#dc2626', 'itens' => array(
+                        array('titulo' => 'Loop de atualização ao salvar um investimento', 'descricao' => 'A página reabria o painel simulando um clique no link do investimento, antes de o menu da tela estar pronto, e o navegador seguia o link e recarregava sem parar. Agora o painel abre direto.'),
+                    )),
+                ),
+            ),
+            array(
                 'versao' => '1.14.1', 'build' => '20261103.2', 'data' => '03/11/2026', 'hora' => '09:20',
                 'titulo' => 'Projeção: totais do mês atual e média sem ajuste de saldo',
                 'destaque' => 'No detalhe mês a mês, as receitas, despesas e faturas do mês atual agora somam o que já foi recebido ou pago e o que ainda falta.',

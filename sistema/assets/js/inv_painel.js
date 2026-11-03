@@ -164,8 +164,10 @@
   var reabrir = (q.get('abrir') || '').replace(/[^0-9]/g, '');
   var gatilho = reabrir ? document.querySelector('[data-painel="' + reabrir + '"]') : null;
   if (gatilho) {
-    abaInicial = q.get('aba') === 'mov' ? 'mov' : 'resumo';
-    gatilho.click();
+    // abre direto (sem gatilho.click()): este script roda antes do DOMContentLoaded, quando o handler de [data-modal] do app.js ainda
+    // nao existe e o clique no <a href="?abrir=ID"> seria seguido pelo navegador, recarregando a pagina em loop
     if (window.history && history.replaceState) { history.replaceState(null, '', location.pathname); }
+    modal.classList.add('show');
+    abrir(gatilho.getAttribute('data-painel'), gatilho.getAttribute('data-nome'), q.get('aba') === 'mov' ? 'mov' : 'resumo');
   }
 })();
